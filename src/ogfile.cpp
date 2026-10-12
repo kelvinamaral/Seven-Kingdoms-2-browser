@@ -243,6 +243,10 @@ int GameFile::load_game(const char *path, const char* fileName)
 		{
 			if( !validate_header() )
 			{
+#ifdef __EMSCRIPTEN_WEB__
+				printf("GameFile header mismatch: file=%s class_size=%u expected=%u terrain_set=%d building_size=%d\n",
+					file_name, (unsigned)class_size, (unsigned)sizeof(GameFile), (int)terrain_set, (int)building_size);
+#endif
 				rc = 0;
 				errMsg = text_game_menu.str_load_error_old(); // "Save game incompatible";
 			}
