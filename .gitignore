@@ -1,0 +1,21 @@
+wasm/obj/
+wasm/out/
+*.o
+*.log
+# never commit game data
+Resource/
+Sprite/
+Image/
+Music/
+Sound/
+Firm/
+Firmsml/
+Campaign/
+Scenario/
+Tutorial/
+LobbyRes/
+*.RES
+*.SPR
+*.FRM
+*.SET
+*.wav
