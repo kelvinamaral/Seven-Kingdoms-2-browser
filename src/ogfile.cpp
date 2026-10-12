@@ -309,7 +309,8 @@ int GameFile::load_game(const char *path, const char* fileName)
 	}
 
 	last_read_success_flag = rc;		// for external functions to read.
-	sys.signal_exit_flag = 4;			// 4-means loading the game successfully. set it to exit the parent loop 
+	if( rc > 0 )
+		sys.signal_exit_flag = 4;			// 4-means loading the game successfully. set it to exit the parent loop 
 
 	return rc;
 }

@@ -19,7 +19,7 @@ Saves and settings are stored in your browser (IndexedDB), on your computer. The
 untick **Load the music** if the tab gets slow. Multiplayer and the intro video are not available. The resolution is fixed at 800×600 and scaled to the window.
 
 ## Status
-Work in progress. The engine starts and the game files are recognised. Known issue: a crash (`null function`) reported right after entering the profile name — under investigation.
+Work in progress. The engine starts and the game files are recognised. Known issue: the tutorial and the saves/scenarios of the GOG HD version use a different file format than this engine and cannot be loaded yet (the game now shows an error instead of crashing). Skirmish/other modes without loading those files are being tested.
 
 ## Credits and license
 - Engine source: [mecirt/7k2](https://github.com/mecirt/7k2) (GPL v2 or later, originally by Enlight Software). This repository is based on it; see `COPYING`.
@@ -43,6 +43,6 @@ Port para WebAssembly do motor de código aberto de *Seven Kingdoms II: The Fryh
 Os arquivos são lidos pelo seu navegador e ficam só na memória da aba; nada é enviado a servidor. Os saves e as configurações ficam no navegador (IndexedDB).
 A pasta de música é grande (cerca de 470 MB): desmarque **Carregar a música** se a aba ficar lenta. Não há multiplayer nem vídeo de abertura.
 
-**Status:** em desenvolvimento. O motor inicia e reconhece os arquivos do jogo. Problema conhecido: um erro (`null function`) logo após digitar o nome do perfil, em investigação.
+**Status:** em desenvolvimento. O motor inicia e reconhece os arquivos do jogo. Problema conhecido: o tutorial e os saves/cenários da versão HD da GOG usam um formato de arquivo diferente deste motor e ainda não podem ser carregados (o jogo agora mostra um erro em vez de travar).
 
 **Licença:** GPL v2 ou posterior (veja `COPYING`). Projeto original: [mecirt/7k2](https://github.com/mecirt/7k2).

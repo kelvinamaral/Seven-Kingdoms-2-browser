@@ -550,6 +550,8 @@ void Tutor::run(int tutorId, int inGameCall)
 	////// Varables need to be save //////
 	reset_detect_variables();
 
+	int loadOk = 1;		// 0 if the tutorial's pre-saved game could not be loaded
+
 	if( !inGameCall )
 	{
 		String str;
@@ -576,6 +578,8 @@ void Tutor::run(int tutorId, int inGameCall)
 				for( i = 0; i < game.lose_condition_count; i++ )
 					game.lose_condition[i].update_strings(1);		// 1=lose condition
 			}
+			else
+				loadOk = 0;
 			// ####### end Gilbert 5/7 #########//
 		}
 		else
@@ -595,8 +599,19 @@ void Tutor::run(int tutorId, int inGameCall)
 					for( i = 0; i < game.lose_condition_count; i++ )
 						game.lose_condition[i].update_strings(1);		// 1=lose condition
 				}
+				else
+					loadOk = 0;
 				// ####### end Gilbert 5/7 #########//
 			}
+			else
+				loadOk = 0;		// tutorial file missing
+		}
+
+		if( !loadOk )
+		{
+			// the game was never initialised: do not enter the battle loop
+			sys.signal_exit_flag = 0;
+			return;
 		}
 
 		//----- set the gaming speed to normal -----//
