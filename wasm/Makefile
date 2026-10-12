@@ -2,7 +2,7 @@
 #
 #   make -j2 SRC=/path/to/7k2 JPEG=/path/to/libjpeg-wasm
 #
-# Produces out/7k2.html (+ .js, .wasm, loader.js). The game data is NOT
+# Produces out/index.html (+ .js, .wasm, loader.js). The game data is NOT
 # included: the page asks the player to select their own copy of the game.
 
 SRC     ?= ..
@@ -25,17 +25,17 @@ LDFLAGS  = -O2 -sUSE_SDL=1 \
            -sTOTAL_STACK=5242880 \
            -lidbfs.js -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 \
            -sEXPORTED_FUNCTIONS=_web_entry -sEXPORTED_RUNTIME_METHODS=FS,ccall \
-           -sMINIFY_HTML=0 --shell-file web/shell.html
+           -sMINIFY_HTML=0 --shell-file web/shell.template.html
 
 vpath %.cpp $(SRC) $(SRC)/src web
 
-all: $(OUT)/7k2.html
+all: $(OUT)/index.html
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(OBJDIR)
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(OUT)/7k2.html: $(OBJS) web/shell.html web/loader.js
+$(OUT)/index.html: $(OBJS) web/shell.template.html web/loader.js
 	@mkdir -p $(OUT)
 	$(CXX) $(LDFLAGS) $(OBJS) $(JPEG)/lib/libjpeg.a -o $@
 	cp web/loader.js $(OUT)/loader.js

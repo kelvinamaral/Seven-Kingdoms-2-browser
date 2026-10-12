@@ -26,7 +26,9 @@
       ended: 'O jogo terminou. Recarregue a página para jogar de novo.',
       no_dir: 'Este navegador não permite selecionar pastas. Use um navegador atual (Chrome, Edge, Firefox ou Safari).',
       empty: 'Nenhum arquivo foi recebido.',
-      hide_log: 'Ocultar registro', show_log: 'Registro'
+      hide_log: 'Ocultar registro', show_log: 'Registro',
+      err_file: 'Esta página foi aberta direto do arquivo (file://) e o navegador bloqueia o motor do jogo desse jeito. Abra pelo endereço do site publicado ou por um servidor local (por exemplo: python -m http.server na pasta do jogo compilado, depois http://localhost:8000).',
+      err_engine: 'O motor do jogo (arquivo .wasm) não carregou. Veja o registro técnico; se você abriu o molde "shell.template.html" em vez do site compilado, use o site publicado ou a pasta "out".'
     },
     en: {
       pick_prompt: 'Select the game folder.',
@@ -43,7 +45,9 @@
       ended: 'The game has ended. Reload the page to play again.',
       no_dir: 'This browser cannot select folders. Use a current Chrome, Edge, Firefox or Safari.',
       empty: 'No files were received.',
-      hide_log: 'Hide log', show_log: 'Log'
+      hide_log: 'Hide log', show_log: 'Log',
+      err_file: 'This page was opened straight from a file (file://) and the browser blocks the game engine that way. Open the published site address or use a local server (e.g. python -m http.server in the built folder, then http://localhost:8000).',
+      err_engine: 'The game engine (.wasm) did not load. See the technical log; if you opened the "shell.template.html" template instead of the built site, use the published site or the "out" folder.'
     }
   };
   var DICT_UI = {
@@ -362,8 +366,8 @@
 
   function start() {
     if (!picked || started) return;
-    if (!runtimeIsReady) { showError(tr('err_runtime')); }
     clearError();
+    if (!runtimeIsReady) $('progressText').textContent = tr('err_runtime'), $('progress').hidden = false;
     $('startBtn').disabled = true;
     $('pickBtn').disabled = true;
     var withMusic = $('optMusic').checked;
@@ -495,5 +499,16 @@
     applyUiLanguage();
     wireUi();
     installKeyGuards();
+
+    if (location.protocol === 'file:') {
+      showError(tr('err_file'));
+      $('pickBtn').disabled = true;
+      $('startBtn').disabled = true;
+      return;
+    }
+    // the engine normally reports in within a few seconds
+    setTimeout(function () {
+      if (!runtimeIsReady && !started) showError(tr('err_engine'));
+    }, 20000);
   });
 })();

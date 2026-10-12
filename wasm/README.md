@@ -8,7 +8,7 @@ the browser tab, and saves/config are kept in IndexedDB.
 ## Build
 1. Install Emscripten and build libjpeg(-turbo) for WebAssembly (static `libjpeg.a`).
 2. `cd wasm && make -j2 JPEG=/path/to/libjpeg-wasm`
-3. Serve `out/` over HTTP and open `7k2.html`.
+3. Serve `out/` over HTTP and open `index.html`.
 
 ## Changes to the engine (all behind `__EMSCRIPTEN_WEB__`)
 - `src/platform.cpp`: 16-bit software frame buffer converted to the 32-bit canvas on each flip; Asyncify waits.
