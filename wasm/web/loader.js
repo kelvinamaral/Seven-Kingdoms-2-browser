@@ -63,25 +63,43 @@
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
       n_res: 'The resolution is fixed at 800×600 and the image is scaled to fit the window.',
+      n_legit: 'Only works with a legitimately purchased copy of the game. No game files are provided here.',
+      n_gog: 'Tested so far with the GOG version, which is the recommended one. The Steam version may work, but has not been verified.',
       log_h: 'Technical log', fullscreen: 'Fullscreen', save_now: 'Write saves to browser', show_log: 'Log'
     }
   };
 
-  var lang = /^pt/i.test(navigator.language || '') ? 'pt' : 'en';
-  function tr(k) { return (T[lang] && T[lang][k]) || T.pt[k] || k; }
+  // English is the default; the choice is remembered in the browser (if allowed).
+  var lang = 'en';
+  try { var saved = localStorage.getItem('sk2-lang'); if (saved === 'pt' || saved === 'en') lang = saved; } catch (e) {}
+  function tr(k) { return (T[lang] && T[lang][k]) || T.en[k] || k; }
 
   function $(id) { return document.getElementById(id); }
 
+  // The HTML holds the Portuguese texts; they are kept in data-pt so both languages can be switched at will.
   function applyUiLanguage() {
     document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
-    if (lang === 'en') {
-      var nodes = document.querySelectorAll('[data-t]');
-      for (var i = 0; i < nodes.length; i++) {
-        var v = DICT_UI.en[nodes[i].getAttribute('data-t')];
-        if (v) nodes[i].textContent = v;
-      }
-      document.title = 'Seven Kingdoms II — WebAssembly';
+    var nodes = document.querySelectorAll('[data-t]');
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.getAttribute('data-pt') === null) n.setAttribute('data-pt', n.textContent);
+      var en = DICT_UI.en[n.getAttribute('data-t')];
+      n.textContent = (lang === 'en' && en) ? en : n.getAttribute('data-pt');
     }
+    document.title = 'Seven Kingdoms II — WebAssembly';
+    var b = $('langBtn');
+    if (b) {                                  // the button names the OTHER language
+      b.textContent = lang === 'en' ? 'PT' : 'EN';
+      b.setAttribute('aria-label', lang === 'en' ? 'Mudar para português' : 'Switch to English');
+      b.title = b.getAttribute('aria-label');
+    }
+  }
+
+  function setLanguage(l) {
+    lang = l;
+    try { localStorage.setItem('sk2-lang', l); } catch (e) {}
+    applyUiLanguage();
+    if (picked) renderCheck(picked);          // re-render the file check in the new language
   }
 
   // ------------------------------------------------------------- constants
@@ -430,6 +448,7 @@
   // ------------------------------------------------------------------- UI
   function wireUi() {
     var picker = $('picker'), drop = $('drop');
+    $('langBtn').addEventListener('click', function () { setLanguage(lang === 'en' ? 'pt' : 'en'); });
 
     if (!('webkitdirectory' in picker)) showError(tr('no_dir'));
 

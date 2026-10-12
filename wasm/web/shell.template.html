@@ -38,6 +38,10 @@
   ul.files { margin: 6px 0; padding-left: 20px; color: var(--muted); font-size: .92rem; }
   .small { color: var(--muted); font-size: .88rem; }
   [hidden] { display: none !important; }
+  .lang { position: absolute; top: 12px; right: 16px; padding: 4px 10px; font-size: .8rem; background: transparent;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 6px; font-weight: 500; }
+  .lang:hover { color: var(--text); }
+  main { position: relative; }
 
   /* game view */
   #game { width: 100%; display: none; flex-direction: column; align-items: center; padding: 8px 0 24px; }
@@ -55,6 +59,7 @@
 <body>
 
 <main id="setup">
+  <button type="button" id="langBtn" class="lang" aria-label="Mudar para português">PT</button>
   <h1 data-t="title">Seven Kingdoms II no navegador</h1>
   <p class="sub" data-t="subtitle">O motor do jogo (código aberto, GPL) compilado para WebAssembly. Os arquivos do jogo não estão incluídos.</p>
 
@@ -89,6 +94,8 @@
     <ul class="files">
       <li data-t="n_saves">Os jogos salvos e as configurações ficam no armazenamento deste navegador (IndexedDB), neste computador.</li>
       <li data-t="n_mp">Multiplayer e vídeos de abertura não estão disponíveis na versão web.</li>
+      <li data-t="n_legit">Só funciona com uma cópia do jogo adquirida de forma legítima. Nenhum arquivo do jogo é fornecido aqui.</li>
+      <li data-t="n_gog">Testado até agora com a versão da GOG, que é a recomendada. A versão da Steam pode funcionar, mas não foi verificada.</li>
       <li data-t="n_res">A resolução é fixa em 800×600 e a imagem é ampliada para caber na janela.</li>
     </ul>
     <details><summary data-t="log_h">Registro técnico</summary><pre id="setupLog" class="small" style="white-space:pre-wrap"></pre></details>
