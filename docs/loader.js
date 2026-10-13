@@ -65,6 +65,7 @@
       opt_music: 'Load the music (uses a lot of memory; untick it if the browser struggles)',
       opt_persist: 'Keep profile and saves in this browser (persistence)', wipe_btn: 'Erase saved data (start from zero)',
       opt_capture: 'Capture the mouse (ESC releases it)',
+      cheats: 'Cheats',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -105,6 +106,7 @@
     lang = l;
     try { localStorage.setItem('sk2-lang', l); } catch (e) {}
     applyUiLanguage();
+    if (cheatOpen) buildCheatPanel();
     if (picked) renderCheck(picked);          // re-render the file check in the new language
   }
 
@@ -151,7 +153,7 @@
   function isLocked() { return document.pointerLockElement === $('canvas'); }
   function requestCapture() {
     var c = $('canvas');
-    if (!started || !captureWanted() || isLocked() || !c.requestPointerLock) return;
+    if (!started || !captureWanted() || cheatOpen || isLocked() || !c.requestPointerLock) return;
     try { var r = c.requestPointerLock(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
   }
   function showHint(text, autoHideMs) {
@@ -182,7 +184,7 @@
   function updateMouseHint() {
     if (!started) return;
     if (isLocked()) showHint(tr('hint_locked'), 3000);
-    else if (captureWanted()) showHint(tr('hint_click'), 0);
+    else if (captureWanted() && !cheatOpen) showHint(tr('hint_click'), 0);
     else showHint('');
   }
   function setupMouseCapture() {
@@ -199,6 +201,119 @@
       if (!captureWanted() && isLocked()) document.exitPointerLock();
       updateMouseHint();
     });
+    updateMouseHint();
+  }
+
+  // ---- cheats panel: replays the game's own cheat key combos (Ctrl/Alt + key)
+  var cheatOpen = false, cheatBusy = false, cheatCancel = false;
+  function L(pt, en) { return lang === 'pt' ? pt : en; }
+  var KC = { ctrl: [17, 'Control', 'ControlLeft'], alt: [18, 'Alt', 'AltLeft'], shift: [16, 'Shift', 'ShiftLeft'] };
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function fireKey(type, key, code, keyCode, mods) {
+    var ev = new KeyboardEvent(type, { key: key, code: code, bubbles: true, cancelable: true,
+      ctrlKey: mods.indexOf('ctrl') >= 0, altKey: mods.indexOf('alt') >= 0, shiftKey: mods.indexOf('shift') >= 0 });
+    // keyCode / which are what the engine's SDL layer reads; the constructor cannot set them
+    try { Object.defineProperty(ev, 'keyCode', { get: function () { return keyCode; } });
+          Object.defineProperty(ev, 'which', { get: function () { return keyCode; } }); } catch (e) {}
+    document.dispatchEvent(ev);
+  }
+  // Presses `mods` + key `count` times (modifiers stay held, so the game sees them on every press).
+  function sendCombo(mods, key, keyCode, count, status) {
+    var gap = count > 1 ? 30 : 70, i = 0;
+    var p = Promise.resolve();
+    mods.forEach(function (m) { p = p.then(function () { fireKey('keydown', KC[m][1], KC[m][2], KC[m][0], mods); return sleep(70); }); });
+    function press() {
+      if (i >= count || cheatCancel) return Promise.resolve();
+      i++;
+      if (status && count > 1) status(i + '/' + count);
+      fireKey('keydown', key, 'Key' + key.toUpperCase(), keyCode, mods);
+      return sleep(gap).then(function () { fireKey('keyup', key, 'Key' + key.toUpperCase(), keyCode, mods); return sleep(gap); }).then(press);
+    }
+    p = p.then(press);
+    mods.slice().reverse().forEach(function (m) { p = p.then(function () { fireKey('keyup', KC[m][1], KC[m][2], KC[m][0], []); return sleep(40); }); });
+    return p;
+  }
+  function typeShifted(seq) {		// seq: list of [key, keyCode], each pressed with Shift
+    var p = Promise.resolve();
+    p = p.then(function () { fireKey('keydown', 'Shift', 'ShiftLeft', 16, ['shift']); return sleep(70); });
+    seq.forEach(function (k) {
+      p = p.then(function () { fireKey('keydown', k[0], 'Digit' + k[0], k[1], ['shift']); return sleep(40); })
+           .then(function () { fireKey('keyup', k[0], 'Digit' + k[0], k[1], ['shift']); return sleep(40); });
+    });
+    return p.then(function () { fireKey('keyup', 'Shift', 'ShiftLeft', 16, []); });
+  }
+
+  function cheatDefs() {
+    return [
+      { h: L('Mapa e tecnologia', 'Map and technology'), items: [
+        { t: L('Revelar o mapa', 'Reveal the map'), m: ['ctrl'], k: 'm', c: 77 },
+        { t: L('Todas as tecnologias', 'All technologies'), m: ['ctrl'], k: 't', c: 84 } ] },
+      { h: L('Recursos', 'Resources'), items: [
+        { t: L('+1000 de ouro', '+1000 gold'), m: ['ctrl'], k: 'c', c: 67, x: 100 },
+        { t: L('−1000 de ouro', '−1000 gold'), m: ['alt', 'ctrl'], k: 'x', c: 88, x: 100 },
+        { t: L('+1000 de comida', '+1000 food'), m: ['ctrl'], k: '\\', c: 220, x: 100 },
+        { t: L('−1000 de comida', '−1000 food'), m: ['alt', 'ctrl'], k: 'c', c: 67, x: 100 } ] },
+      { h: L('Cidade e edifícios (selecione antes no jogo)', 'Town and buildings (select in game first)'), items: [
+        { t: L('+10 de população', '+10 population'), m: ['ctrl'], k: ';', c: 186, x: 10 },
+        { t: L('Encher a Sede do Poder', 'Fill the Seat of Power'), m: ['ctrl'], k: '=', c: 187 },
+        { t: L('+20 de dano no edifício', '+20 damage on building'), m: ['alt', 'ctrl'], k: 'j', c: 74, x: 10 },
+        { t: L('−20 de dano no edifício', '−20 damage on building'), m: ['alt', 'ctrl'], k: 'k', c: 75, x: 10 } ] },
+      { h: L('Reputação (cenários)', 'Reputation (scenarios)'), items: [
+        { t: L('+10 de reputação', '+10 reputation'), m: ['alt', 'ctrl'], k: 'r', c: 82, x: 10 },
+        { t: L('−10 de reputação', '−10 reputation'), m: ['alt', 'ctrl'], k: 'e', c: 69, x: 10 } ] },
+      { h: L('Modos (liga/desliga)', 'Toggles'), items: [
+        { t: L('Rei imortal', 'Immortal king'), m: ['ctrl'], k: 'u', c: 85 },
+        { t: L('Construção rápida', 'Fast build'), m: ['ctrl'], k: 'z', c: 90 },
+        { t: L('Mensagens de depuração', 'Debug messages'), m: ['ctrl'], k: 'a', c: 65 },
+        { t: L('Informações da IA', 'AI information'), m: ['ctrl'], k: 'd', c: 68 },
+        { t: L('Zerar pontuação econômica', 'Reset economic score'), m: ['ctrl'], k: 'j', c: 74 } ] }
+    ];
+  }
+
+  function buildCheatPanel() {
+    var p = $('cheatPanel');
+    p.textContent = '';
+    function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; }
+    p.appendChild(el('p', 'note', L(
+      'Estes botões enviam os atalhos de trapaça do próprio jogo. Funcionam no Editor de Cenários; em partidas normais, ative antes o modo cheat. O mouse fica solto enquanto este painel está aberto.',
+      'These buttons send the game\u2019s own cheat shortcuts. They work in the Scenario Editor; in normal games enable cheat mode first. The mouse stays released while this panel is open.')));
+    var status = el('span', 'small', '');
+    function run(fn) {
+      if (cheatBusy) { cheatCancel = true; return; }
+      cheatBusy = true; cheatCancel = false;
+      fn().then(function () { cheatBusy = false; status.textContent = cheatCancel ? L('Cancelado.', 'Cancelled.') : ''; });
+    }
+    cheatDefs().forEach(function (g) {
+      p.appendChild(el('h4', '', g.h));
+      var row = el('div', 'grp');
+      g.items.forEach(function (it) {
+        var box = el('span', 'cb');
+        var b = el('button', 'secondary', it.t); b.type = 'button';
+        b.addEventListener('click', function () { run(function () { return sendCombo(it.m, it.k, it.c, 1); }); });
+        box.appendChild(b);
+        if (it.x) {
+          var bx = el('button', 'secondary x', '\u00d7' + it.x); bx.type = 'button';
+          bx.title = L('Repetir ', 'Repeat ') + it.x + '\u00d7';
+          bx.addEventListener('click', function () { run(function () { return sendCombo(it.m, it.k, it.c, it.x, function (t) { status.textContent = t; }); }); });
+          box.appendChild(bx);
+        }
+        row.appendChild(box);
+      });
+      p.appendChild(row);
+    });
+    p.appendChild(el('h4', '', L('Partidas normais', 'Normal games')));
+    var row2 = el('div', 'grp');
+    var en = el('button', 'secondary', L('Ativar modo cheat (!!##%%&&)', 'Enable cheat mode (!!##%%&&)')); en.type = 'button';
+    en.addEventListener('click', function () { run(function () { return typeShifted([['1', 49], ['1', 49], ['3', 51], ['3', 51], ['5', 53], ['5', 53], ['7', 55], ['7', 55]]); }); });
+    row2.appendChild(en);
+    p.appendChild(row2);
+    var foot = el('div', 'note', ''); foot.appendChild(status); p.appendChild(foot);
+  }
+
+  function toggleCheats() {
+    cheatOpen = !cheatOpen;
+    if (cheatOpen) { buildCheatPanel(); if (isLocked()) document.exitPointerLock(); }
+    $('cheatPanel').hidden = !cheatOpen;
     updateMouseHint();
   }
 
@@ -595,6 +710,7 @@
 
     $('startBtn').addEventListener('click', start);
     $('wipeBtn').addEventListener('click', wipeData);
+    $('cheatBtn').addEventListener('click', toggleCheats);
     Array.prototype.forEach.call(document.querySelectorAll('.copybtn'), function (btn) {
       btn.addEventListener('click', function () { copyLog(btn); });
     });

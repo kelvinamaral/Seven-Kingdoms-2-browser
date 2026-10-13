@@ -61,6 +61,14 @@
   #stage:fullscreen canvas#canvas { width: min(100vw, calc(100vh * 4 / 3)); height: auto; }
   #log { width: min(100vw - 16px, 900px); box-sizing: border-box; max-height: 30vh; overflow: auto; background: #0b0907; border: 1px solid var(--line);
     padding: 8px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; margin: 8px; }
+  #cheatPanel { width: min(100vw - 16px, 900px); box-sizing: border-box; margin: 8px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; background: #14100c; }
+  #cheatPanel h4 { margin: 10px 0 6px; font-size: .85rem; color: var(--muted); font-weight: 600; }
+  #cheatPanel .grp { display: flex; flex-wrap: wrap; gap: 6px; }
+  #cheatPanel .cb { display: inline-flex; gap: 2px; }
+  #cheatPanel button { padding: 5px 10px; font-size: .85rem; }
+  #cheatPanel button.x { padding: 5px 7px; opacity: .85; }
+  #cheatPanel .note { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
   .logbox { position: relative; }
   .copybtn { position: absolute; top: 12px; right: 14px; z-index: 2; padding: 4px 8px; font-size: 1rem; line-height: 1; cursor: pointer; }
   .copybtn.ok { outline: 2px solid #4a9; }
@@ -124,10 +132,12 @@
   <div id="toolbar">
     <button type="button" class="secondary" id="fsBtn" data-t="fullscreen">Tela cheia</button>
     <button type="button" class="secondary" id="saveBtn" data-t="save_now">Gravar saves no navegador</button>
+    <button type="button" class="secondary" id="cheatBtn" data-t="cheats">Cheats</button>
     <button type="button" class="secondary" id="logBtn" data-t="show_log">Registro</button>
     <label class="small"><input type="checkbox" id="optCapture" checked> <span data-t="opt_capture">Capturar o mouse (ESC libera)</span></label>
     <span class="small" id="gameStatus"></span>
   </div>
+  <div id="cheatPanel" hidden></div>
   <div class="logbox" id="logbox" hidden><button type="button" class="copybtn" data-copy="log" title="Copiar / Copy" aria-label="Copiar / Copy">&#x1F4CB;</button><pre id="log"></pre></div>
 </div>
 
