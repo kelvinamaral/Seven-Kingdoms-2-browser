@@ -5,6 +5,8 @@
 > **You need your own, legitimately purchased copy of the game.** This project contains **no game files**, and it only works with a copy you acquired legally.
 > Tested so far with the **GOG** version, which is the **recommended** one. The Steam version may work, but has not been verified.
 
+> **Tip:** if the game seems stuck on a screen or message box (for example the cursor does not move), press **Enter** to continue.
+
 *Português: [veja abaixo](#português).*
 
 A WebAssembly port of the open-source engine of *Seven Kingdoms II: The Fryhtan War*, so it can run in a web browser.
@@ -19,7 +21,25 @@ Saves and settings are stored in your browser (IndexedDB), on your computer. The
 untick **Load the music** if the tab gets slow. Multiplayer and the intro video are not available. The resolution is fixed at 800×600 and scaled to the window.
 
 ## Status
-Work in progress. The engine starts and the game files are recognised. Known issue: the tutorial and the saves/scenarios of the GOG HD version use a different file format than this engine and cannot be loaded yet (the game now shows an error instead of crashing). Skirmish/other modes without loading those files are being tested.
+Work in progress, playable. Last tested with the GOG version.
+
+**Works**
+- [x] The game starts in the browser from your own game folder (nothing is uploaded)
+- [x] Menus, single-player matches, scenario editor
+- [x] Saving and loading your own saves (fixed a save-file reading bug)
+- [x] Profile, settings and hall of fame kept in the browser (can be turned off or erased from the start page)
+- [x] Background music no longer changes track every in-game day
+- [x] Mouse capture (ESC releases it), fullscreen, system cursor hidden while playing
+- [x] Copy button for the technical log; English/Portuguese page
+
+**Not working yet / known issues**
+- [ ] Tutorial and the saves/scenarios shipped with the GOG HD version (different file format than this engine)
+- [ ] Cursor can look stuck on some start screens and message boxes: press **Enter**
+- [ ] Some audio errors still appear in the log
+- [ ] Multiplayer and the intro video
+- [ ] The game folder must be selected again on every visit (files are only kept in the tab's memory)
+
+**Ideas for later:** remember the game folder (Chrome/Edge), import/export saves, cheats menu.
 
 ## Credits and license
 - Engine source: [mecirt/7k2](https://github.com/mecirt/7k2) (GPL v2 or later, originally by Enlight Software). This repository is based on it; see `COPYING`.
@@ -37,12 +57,32 @@ Work in progress. The engine starts and the game files are recognised. Known iss
 > **É preciso ter a sua própria cópia do jogo, adquirida de forma legítima.** Este projeto **não contém nenhum arquivo do jogo** e só funciona com uma cópia comprada legalmente.
 > Testado até agora com a versão da **GOG**, que é a **recomendada**. A versão da Steam pode funcionar, mas não foi verificada.
 
+> **Dica:** se o jogo parecer travado em alguma tela ou caixa de aviso (por exemplo, o cursor não se move), aperte **Enter** para continuar.
+
 Port para WebAssembly do motor de código aberto de *Seven Kingdoms II: The Fryhtan War*, para rodar no navegador.
 
 **Como jogar:** abra o link acima, selecione a pasta onde o jogo está instalado (a que tem `Resource`, `Sprite`, `Image`…) e clique em **Jogar**.
 Os arquivos são lidos pelo seu navegador e ficam só na memória da aba; nada é enviado a servidor. Os saves e as configurações ficam no navegador (IndexedDB).
 A pasta de música é grande (cerca de 470 MB): desmarque **Carregar a música** se a aba ficar lenta. Não há multiplayer nem vídeo de abertura.
 
-**Status:** em desenvolvimento. O motor inicia e reconhece os arquivos do jogo. Problema conhecido: o tutorial e os saves/cenários da versão HD da GOG usam um formato de arquivo diferente deste motor e ainda não podem ser carregados (o jogo agora mostra um erro em vez de travar).
+**Status:** em desenvolvimento, já jogável. Último teste com a versão da GOG.
+
+**Funciona**
+- [x] O jogo inicia no navegador a partir da sua pasta (nada é enviado)
+- [x] Menus, partidas single-player, editor de cenários
+- [x] Gravar e carregar os seus saves (corrigido um erro de leitura de save)
+- [x] Perfil, configurações e hall da fama guardados no navegador (dá para desligar ou apagar na página inicial)
+- [x] A música não troca mais de faixa a cada dia do jogo
+- [x] Captura do mouse (ESC libera), tela cheia, ponteiro do sistema oculto durante o jogo
+- [x] Botão de copiar o registro técnico; página em português e inglês
+
+**Ainda não funciona / problemas conhecidos**
+- [ ] Tutorial e os saves/cenários que vêm com a versão HD da GOG (formato de arquivo diferente do deste motor)
+- [ ] O cursor pode parecer travado em algumas telas iniciais e caixas de aviso: aperte **Enter**
+- [ ] Alguns erros de áudio ainda aparecem no registro
+- [ ] Multiplayer e vídeo de abertura
+- [ ] É preciso selecionar a pasta do jogo a cada visita (os arquivos ficam só na memória da aba)
+
+**Ideias para depois:** lembrar a pasta do jogo (Chrome/Edge), importar/exportar saves, menu de cheats.
 
 **Licença:** GPL v2 ou posterior (veja `COPYING`). Projeto original: [mecirt/7k2](https://github.com/mecirt/7k2).
