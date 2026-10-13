@@ -350,6 +350,7 @@
         if (FS.isDir(st.mode)) walk(p, r); else out.push({ name: r, data: FS.readFile(p) });
       });
     })(GAME_DIR + '/Save', 'Save');
+    userDirFiles().forEach(function (f) { out.push({ name: f.rel, data: FS.readFile(f.path) }); });
     return out;
   }
   function makeZip(files) {
@@ -410,7 +411,11 @@
     if (name.split('/').some(function (p) { return p === '..' || p === ''; })) return null;
     var parts = name.split('/');
     if (parts.length === 1) return ROOT_FILES.test(parts[0]) ? parts[0] : null;
-    if (parts[0].toLowerCase() === 'save') { parts[0] = 'Save'; return parts.join('/'); }
+    var top = parts[0].toLowerCase();
+    if (top === 'save' || top === 'scenario' || top === 'campaign') {
+      parts[0] = top.charAt(0).toUpperCase() + top.slice(1);
+      return parts.join('/');
+    }
     return null;
   }
   function importSaves(fileList) {
@@ -430,6 +435,7 @@
           var full = GAME_DIR + '/' + dest, dir = full.slice(0, full.lastIndexOf('/'));
           FS.mkdirTree(dir);
           FS.writeFile(full, e.data);
+          userSet[dest.toLowerCase()] = 1;
           n++;
         });
       });
@@ -648,11 +654,43 @@
     catch (e) { return []; }
   }
 
+  // Files the player creates outside Save/ and the game folder root (e.g. Scenario/*.SCN, where the
+  // Scenario Editor and auto-saves go): detected by modification time, plus anything restored/imported.
+  var USER_DIRS = ['Scenario', 'Campaign'];
+  var loadDoneTime = Infinity, userSet = {};
+  function walkFiles(dir, rel, cb) {
+    var names = [];
+    try { names = FS.readdir(dir); } catch (e) { return; }
+    names.forEach(function (n) {
+      if (n === '.' || n === '..') return;
+      var p = dir + '/' + n, r = rel ? rel + '/' + n : n, st;
+      try { st = FS.stat(p); } catch (e) { return; }
+      if (FS.isDir(st.mode)) walkFiles(p, r, cb); else cb(p, r, st);
+    });
+  }
+  function userDirFiles() {		// [{rel, path}] for Scenario/ and Campaign/ files made by the player
+    var out = [];
+    var names = [];
+    try { names = FS.readdir(GAME_DIR); } catch (e) { return out; }
+    names.forEach(function (top) {
+      if (USER_DIRS.indexOf(top.charAt(0).toUpperCase() + top.slice(1).toLowerCase()) < 0) return;
+      walkFiles(GAME_DIR + '/' + top, top.charAt(0).toUpperCase() + top.slice(1).toLowerCase(), function (p, r, st) {
+        if (userSet[r.toLowerCase()] || st.mtime.getTime() > loadDoneTime) out.push({ rel: r, path: p });
+      });
+    });
+    return out;
+  }
+
   var saving = false;
   function persistNow() {
     if (!started || saving || !persistOn) return Promise.resolve();
     saving = true;
     rootFiles().forEach(function (n) { copyFile(GAME_DIR + '/' + n, PERSIST_DIR + '/' + n); });
+    userDirFiles().forEach(function (f) {
+      var dest = PERSIST_DIR + '/u/' + f.rel;
+      try { FS.mkdirTree(dest.slice(0, dest.lastIndexOf('/'))); } catch (e) {}
+      copyFile(f.path, dest);
+    });
     return syncfs(false).then(function () {		// one pass writes every IDBFS mount
       saving = false;
     });
@@ -669,10 +707,17 @@
 
   // called after the game files were copied, so the player's own data wins over the folder's
   function restorePersisted() {
+    loadDoneTime = Date.now();
     if (!persistOn) return;
     try {
       FS.readdir(PERSIST_DIR).forEach(function (n) {
         if (ROOT_FILES.test(n)) copyFile(PERSIST_DIR + '/' + n, GAME_DIR + '/' + n);
+      });
+      if (exists(PERSIST_DIR + '/u')) walkFiles(PERSIST_DIR + '/u', '', function (p, r) {
+        var dest = GAME_DIR + '/' + r;
+        FS.mkdirTree(dest.slice(0, dest.lastIndexOf('/')));
+        copyFile(p, dest);
+        userSet[r.toLowerCase()] = 1;
       });
     } catch (e) { log('restore: ' + e); }
   }
