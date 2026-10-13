@@ -80,6 +80,7 @@
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
       n_res: 'The resolution is fixed at 800×600 and the image is scaled to fit the window.',
       n_legit: 'Only works with a legitimately purchased copy of the game. No game files are provided here.',
+      n_unofficial: 'Unofficial fan project, not affiliated with Enlight Software. \u201cSeven Kingdoms\u201d is a trademark of Enlight Software.',
       n_gog: 'Tested so far with the GOG version, which is the recommended one. The Steam version may work, but has not been verified.',
       log_h: 'Technical log', fullscreen: 'Fullscreen', save_now: 'Write saves to browser', show_log: 'Log'
     }

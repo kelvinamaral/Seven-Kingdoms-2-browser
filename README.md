@@ -5,6 +5,8 @@
 > **You need your own, legitimately purchased copy of the game.** This project contains **no game files**, and it only works with a copy you acquired legally.
 > Tested so far with the **GOG** version, which is the **recommended** one. The Steam version may work, but has not been verified.
 
+> **Unofficial fan project, not affiliated with Enlight Software.** "Seven Kingdoms" is a trademark of Enlight Software Ltd.
+
 > **Tip:** if the game seems stuck on a screen or message box (for example the cursor does not move), press **Enter** to continue.
 
 *Português: [veja abaixo](#português).*
@@ -51,6 +53,7 @@ Work in progress, playable. Last tested with the **GOG** version.
 - The built site is in [`docs/`](docs/) and is served with GitHub Pages. To run it locally, serve that folder over HTTP (`python -m http.server 8000`, then open `http://localhost:8000`); opening the file by double-click does not work.
 - Build instructions: [`wasm/README.md`](wasm/README.md).
 - Never commit game data to this repository.
+- "Seven Kingdoms" is a trademark of Enlight Software Ltd.; this is an unofficial fan project and is not affiliated with or endorsed by Enlight Software. The game data, audio, video and scenarios are not covered by the GPL and are not included here.
 
 ---
 
@@ -60,6 +63,8 @@ Work in progress, playable. Last tested with the **GOG** version.
 
 > **É preciso ter a sua própria cópia do jogo, adquirida de forma legítima.** Este projeto **não contém nenhum arquivo do jogo** e só funciona com uma cópia comprada legalmente.
 > Testado até agora com a versão da **GOG**, que é a **recomendada**. A versão da Steam pode funcionar, mas não foi verificada.
+
+> **Projeto não oficial, feito por fãs, sem vínculo com a Enlight Software.** "Seven Kingdoms" é marca da Enlight Software Ltd.
 
 > **Dica:** se o jogo parecer travado em alguma tela ou caixa de aviso (por exemplo, o cursor não se move), aperte **Enter** para continuar.
 
