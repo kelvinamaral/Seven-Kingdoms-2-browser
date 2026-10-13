@@ -290,9 +290,19 @@ int File::file_write(void* dataBuf, unsigned dataSize)
 
 int File::file_read(void* dataBuf, unsigned dataSize)
 {
-  if (dataSize == 0) return 1;
-
 	#define MAX_READ_SIZE 0xFFF0
+
+	if (dataSize == 0)
+	{
+		// file_write() stores a size prefix even for empty blocks, so it must be consumed here
+		if( allow_vary_size )
+		{
+			unsigned short writtenZero = file_get_unsigned_short();
+			if( writtenZero )
+				file_seek( writtenZero, false );
+		}
+		return 1;
+	}
 
 	err_when (file_handle == NULL);       // not initialized
 
@@ -310,7 +320,7 @@ int File::file_read(void* dataBuf, unsigned dataSize)
          readSize = min(dataSize, writtenSize);  // the read size is the minimum of the written size and the supposed read size
    }
 
-   int actualRead = fread(dataBuf, 1, dataSize, file_handle);
+   int actualRead = fread(dataBuf, 1, readSize, file_handle);
 
    if( readSize < writtenSize )
       file_seek( writtenSize-readSize, false );

@@ -21,6 +21,7 @@
       missing_opt: 'Arquivos esperados que não foram encontrados (o jogo pode falhar):',
       loading: 'Carregando', starting: 'Iniciando o jogo…', ready: 'Pronto para jogar.',
       mem_note: 'Total a carregar', saved: 'Saves gravados no navegador.',
+      wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
       ended: 'O jogo terminou. Recarregue a página para jogar de novo.',
@@ -40,6 +41,7 @@
       missing_opt: 'Expected files that were not found (the game may fail):',
       loading: 'Loading', starting: 'Starting the game…', ready: 'Ready to play.',
       mem_note: 'Total to load', saved: 'Saves written to the browser.',
+      wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
       ended: 'The game has ended. Reload the page to play again.',
@@ -59,6 +61,7 @@
       pick_h: '1. Choose the game folder', drop_p: 'Drag the game install folder here', or: 'or',
       pick_btn: 'Select folder…',
       opt_music: 'Load the music (uses a lot of memory; untick it if the browser struggles)',
+      opt_persist: 'Keep profile and saves in this browser (persistence)', wipe_btn: 'Erase saved data (start from zero)',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -321,11 +324,20 @@
     } catch (e) { log('copy ' + from + ': ' + e); }
   }
 
+  // Files the game writes in its working directory (not inside Save/): profile, config, hall of fame
+  var ROOT_FILES = /^(config\.dat|hallfame\.dat|.+\.prf)$/i;
+  var persistOn = true;
+
+  function rootFiles() {
+    try { return FS.readdir(GAME_DIR).filter(function (n) { return ROOT_FILES.test(n); }); }
+    catch (e) { return []; }
+  }
+
   var saving = false;
   function persistNow() {
-    if (!started || saving) return Promise.resolve();
+    if (!started || saving || !persistOn) return Promise.resolve();
     saving = true;
-    copyFile(GAME_DIR + '/CONFIG.DAT', PERSIST_DIR + '/CONFIG.DAT');
+    rootFiles().forEach(function (n) { copyFile(GAME_DIR + '/' + n, PERSIST_DIR + '/' + n); });
     return syncfs(false).then(function () {		// one pass writes every IDBFS mount
       saving = false;
     });
@@ -334,12 +346,35 @@
   function setupPersistence() {
     FS.mkdirTree(GAME_DIR + '/Save');
     FS.mkdirTree(PERSIST_DIR);
+    if (!persistOn) return Promise.resolve();
     FS.mount(IDBFS, {}, GAME_DIR + '/Save');
     FS.mount(IDBFS, {}, PERSIST_DIR);
-    return syncfs(true).then(function () {
-      copyFile(PERSIST_DIR + '/CONFIG.DAT', GAME_DIR + '/CONFIG.DAT');
+    return syncfs(true);
+  }
+
+  // called after the game files were copied, so the player's own data wins over the folder's
+  function restorePersisted() {
+    if (!persistOn) return;
+    try {
+      FS.readdir(PERSIST_DIR).forEach(function (n) {
+        if (ROOT_FILES.test(n)) copyFile(PERSIST_DIR + '/' + n, GAME_DIR + '/' + n);
+      });
+    } catch (e) { log('restore: ' + e); }
+  }
+
+  function wipeData() {
+    if (!window.confirm(tr('wipe_ask'))) return;
+    var names = [GAME_DIR + '/Save', PERSIST_DIR], left = names.length;
+    names.forEach(function (n) {
+      try {
+        var r = indexedDB.deleteDatabase(n);
+        r.onsuccess = r.onerror = r.onblocked = function () {
+          if (--left === 0) showInfo(tr('wiped'));
+        };
+      } catch (e) { left--; }
     });
   }
+  function showInfo(t) { $('progress').hidden = false; $('progressText').textContent = t; }
 
   function progress(done, total, label) {
     $('progress').hidden = false;
@@ -389,6 +424,8 @@
     $('startBtn').disabled = true;
     $('pickBtn').disabled = true;
     var withMusic = $('optMusic').checked;
+    persistOn = $('optPersist').checked;
+    try { localStorage.setItem('sk2-persist', persistOn ? '1' : '0'); } catch (e) {}
 
     whenRuntimeReady().then(function () {
       installCaseInsensitiveLookup();
@@ -397,6 +434,7 @@
     }).then(function () {
       return copyGameFiles(picked, withMusic);
     }).then(function () {
+      restorePersisted();
       picked = null;      // let the browser free the file handles
       $('progressText').textContent = tr('starting');
       document.body.classList.add('playing');
@@ -424,7 +462,7 @@
   }
 
   function scheduleAutosave() {
-    setInterval(function () { persistNow(); }, 15000);
+    setInterval(function () { persistNow(); }, 5000);
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') persistNow();
     });
@@ -476,6 +514,8 @@
     window.addEventListener('drop', function (ev) { ev.preventDefault(); });
 
     $('startBtn').addEventListener('click', start);
+    $('wipeBtn').addEventListener('click', wipeData);
+    try { if (localStorage.getItem('sk2-persist') === '0') $('optPersist').checked = false; } catch (e) {}
 
     $('fsBtn').addEventListener('click', function () {
       var c = $('canvas');
