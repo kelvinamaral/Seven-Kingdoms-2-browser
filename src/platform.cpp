@@ -649,13 +649,35 @@ int PollInputDevices ()
   return 0;
 }
 
+#ifdef __EMSCRIPTEN_WEB__
+// Game cursor position tracked by us (game pixels). SDL's own absolute position is not
+// reliable while the browser pointer is locked, so it is bypassed in that state.
+static double web_cx = 0, web_cy = 0;
+static bool web_is_locked ()
+{
+  return EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; }) != 0;
+}
+#endif
+
 void GetMousePos (int *x, int *y)
 {
+#ifdef __EMSCRIPTEN_WEB__
+  if (web_is_locked ()) {
+    *x = (int) web_cx;
+    *y = (int) web_cy;
+    return;
+  }
+#endif
   SDL_GetMouseState (x, y);
 }
 
 void SetMousePos (int x, int y)
 {
+#ifdef __EMSCRIPTEN_WEB__
+  web_cx = x;
+  web_cy = y;
+  if (web_is_locked ()) return;
+#endif
   SDL_WarpMouse (x, y);
 }
 
@@ -686,26 +708,23 @@ int ProcessNextEvent()
 #ifdef __EMSCRIPTEN_WEB__
     // While the browser pointer is locked (captured) the absolute position is not
     // meaningful, so move the game cursor by the relative motion, scaled to game pixels.
-    static bool wasLocked = false;
-    static double wx = 0, wy = 0;
-    int locked = EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; });
-    if (locked) {
+    if (web_is_locked ()) {
       double scale = EM_ASM_DOUBLE({ var c = Module['canvas']; var r = c.getBoundingClientRect(); return r.width > 0 ? c.width / r.width : 1; });
-      if (!wasLocked) { wx = mouse.cur_x; wy = mouse.cur_y; }
-      wx += event.motion.xrel * scale;
-      wy += event.motion.yrel * scale;
-      if (wx < 0) wx = 0;
-      if (wy < 0) wy = 0;
-      if (wx > VGA_WIDTH - 1) wx = VGA_WIDTH - 1;
-      if (wy > VGA_HEIGHT - 1) wy = VGA_HEIGHT - 1;
-      mouse.cur_x = (int) wx;
-      mouse.cur_y = (int) wy;
+      web_cx += event.motion.xrel * scale;
+      web_cy += event.motion.yrel * scale;
+      if (web_cx < 0) web_cx = 0;
+      if (web_cy < 0) web_cy = 0;
+      if (web_cx > VGA_WIDTH - 1) web_cx = VGA_WIDTH - 1;
+      if (web_cy > VGA_HEIGHT - 1) web_cy = VGA_HEIGHT - 1;
+      mouse.cur_x = (int) web_cx;
+      mouse.cur_y = (int) web_cy;
     }
     else {
       mouse.cur_x = event.motion.x;
       mouse.cur_y = event.motion.y;
+      web_cx = mouse.cur_x;
+      web_cy = mouse.cur_y;
     }
-    wasLocked = locked != 0;
 #else
     mouse.cur_x = event.motion.x;
     mouse.cur_y = event.motion.y;
@@ -731,6 +750,10 @@ int ProcessNextEvent()
         }
         break;
     }
+#ifdef __EMSCRIPTEN_WEB__
+    if ((int) web_cx != mouse.cur_x) web_cx = mouse.cur_x;		// keep in step with the bounded position
+    if ((int) web_cy != mouse.cur_y) web_cy = mouse.cur_y;		// (keeps the sub-pixel part otherwise)
+#endif
     mouse_cursor.process(mouse.cur_x, mouse.cur_y);
     power.mouse_handler();
   }
@@ -750,7 +773,7 @@ int ProcessNextEvent()
       }
 
 #ifdef __EMSCRIPTEN_WEB__
-      if (EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; })) {
+      if (web_is_locked ()) {
         ev.x = mouse.cur_x;			// absolute coordinates are not valid while the pointer is locked
         ev.y = mouse.cur_y;
       }
