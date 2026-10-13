@@ -72,6 +72,11 @@ void ShowMessageBox (const char *text) {
 
 void ShowMouseCursor (bool show)
 {
+#ifdef __EMSCRIPTEN_WEB__
+  // The game asks for the system cursor while its dialogs/message boxes are open (it hides its own).
+  // Let the page release the captured pointer and show the normal cursor meanwhile.
+  EM_ASM({ if (window.SevenKWeb && SevenKWeb.cursor) SevenKWeb.cursor($0); }, show ? 1 : 0);
+#endif
   SDL_ShowCursor (show);
 //  SDL_WM_GrabInput(show ? SDL_GRAB_OFF : SDL_GRAB_ON);
 }

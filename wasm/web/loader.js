@@ -164,6 +164,21 @@
       hintTimer = setTimeout(function () { h.hidden = true; }, 500);
     }, autoHideMs);
   }
+  var relockPending = false, selfExit = false, quietLock = false;
+  // Called by the engine when it shows (dialogs) or hides (normal play) the system cursor.
+  function engineCursor(show) {
+    var c = $('canvas');
+    if (!c) return;
+    c.style.cursor = show ? 'default' : 'none';
+    if (show) {
+      if (isLocked()) { relockPending = true; selfExit = true; document.exitPointerLock(); }
+    } else if (relockPending) {
+      relockPending = false; quietLock = true;
+      requestCapture();
+      setTimeout(function () { quietLock = false; }, 1500);
+    }
+  }
+
   function updateMouseHint() {
     if (!started) return;
     if (isLocked()) showHint(tr('hint_locked'), 3000);
@@ -173,7 +188,12 @@
   function setupMouseCapture() {
     try { if (localStorage.getItem('sk2-capture') === '0') $('optCapture').checked = false; } catch (e) {}
     $('canvas').addEventListener('mousedown', function () { requestCapture(); });
-    document.addEventListener('pointerlockchange', function () { updateMouseHint(); if (!isLocked()) $('canvas').focus(); });
+    document.addEventListener('pointerlockchange', function () {
+      if (!isLocked() && selfExit) { selfExit = false; return; }		// released by the game for a dialog
+      if (isLocked() && quietLock) { quietLock = false; return; }	// re-captured after a dialog
+      updateMouseHint();
+      if (!isLocked()) $('canvas').focus();
+    });
     $('optCapture').addEventListener('change', function () {
       try { localStorage.setItem('sk2-capture', captureWanted() ? '1' : '0'); } catch (e) {}
       if (!captureWanted() && isLocked()) document.exitPointerLock();
@@ -601,6 +621,7 @@
 
   // ------------------------------------------------------------ public API
   window.SevenKWeb = {
+    cursor: function (show) { engineCursor(show); },
     log: log,
     runtimeReady: function () {
       runtimeIsReady = true;
