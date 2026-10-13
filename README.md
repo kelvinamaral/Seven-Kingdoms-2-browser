@@ -25,6 +25,8 @@ untick **Load the music** if the tab gets slow. Multiplayer and the intro video 
 ## Status
 Work in progress, playable. Last tested with the **GOG** version.
 
+> **No warranty.** It may contain bugs and errors, and there is no guarantee that it works. The software is provided "as is", without warranty of any kind (see sections 11 and 12 of the GPL in `COPYING`). Use is at your own risk; to the extent permitted by law, the author is not liable for any damage that may result from its use. Keep a backup of your saves (see Export).
+
 ### What works
 - [x] Starts in the browser from your own game folder (nothing is uploaded)
 - [x] Menus, single-player matches and the scenario editor
@@ -76,6 +78,8 @@ A pasta de música é grande (cerca de 470 MB): desmarque **Carregar a música**
 
 ## Status
 Em desenvolvimento, já jogável. Último teste com a versão da **GOG**.
+
+> **Sem garantia.** Pode apresentar erros, e não há garantia de funcionamento. O software é fornecido "como está", sem garantias de qualquer tipo (veja as seções 11 e 12 da GPL em `COPYING`). O uso é por sua conta e risco; na medida permitida pela lei, o autor não se responsabiliza por eventuais danos decorrentes do uso. Faça backup dos seus saves (veja Exportar).
 
 ### O que funciona
 - [x] Inicia no navegador a partir da sua pasta do jogo (nada é enviado)

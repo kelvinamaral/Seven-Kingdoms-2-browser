@@ -81,6 +81,7 @@
       n_res: 'The resolution is fixed at 800×600 and the image is scaled to fit the window.',
       n_legit: 'Only works with a legitimately purchased copy of the game. No game files are provided here.',
       n_unofficial: 'Unofficial fan project, not affiliated with Enlight Software. \u201cSeven Kingdoms\u201d is a trademark of Enlight Software.',
+      n_warranty: 'It may contain errors and there is no guarantee that it works. The software is provided "as is", without warranty (GPL v2, sections 11 and 12); use is at your own risk and, to the extent permitted by law, the author is not liable for any damage. Back up your saves.',
       n_gog: 'Tested so far with the GOG version, which is the recommended one. The Steam version may work, but has not been verified.',
       log_h: 'Technical log', fullscreen: 'Fullscreen', save_now: 'Write saves to browser', show_log: 'Log'
     }

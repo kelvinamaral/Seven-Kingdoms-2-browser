@@ -118,6 +118,7 @@
       <li data-t="n_mp">Multiplayer e vídeos de abertura não estão disponíveis na versão web.</li>
       <li data-t="n_legit">Só funciona com uma cópia do jogo adquirida de forma legítima. Nenhum arquivo do jogo é fornecido aqui.</li>
       <li data-t="n_unofficial">Projeto não oficial, feito por fãs, sem vínculo com a Enlight Software. &ldquo;Seven Kingdoms&rdquo; é marca da Enlight Software.</li>
+      <li data-t="n_warranty">Pode apresentar erros e não há garantia de funcionamento. O software é fornecido &ldquo;como está&rdquo;, sem garantias (GPL v2, seções 11 e 12); o uso é por sua conta e risco e, na medida permitida pela lei, o autor não se responsabiliza por eventuais danos. Faça backup dos seus saves.</li>
       <li data-t="n_gog">Testado até agora com a versão da GOG, que é a recomendada. A versão da Steam pode funcionar, mas não foi verificada.</li>
       <li data-t="n_res">A resolução é fixa em 800×600 e a imagem é ampliada para caber na janela.</li>
     </ul>
@@ -148,7 +149,7 @@
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
-    locateFile: function (p) { return p + '?v=20261013194639'; },
+    locateFile: function (p) { return p + '?v=20261013194953'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -157,8 +158,8 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js?v=20261013194639"></script>
-<script async type="text/javascript" src="index.js?v=20261013194639"></script>
+<script src="loader.js?v=20261013194953"></script>
+<script async type="text/javascript" src="index.js?v=20261013194953"></script>
 </body>
 </html>
 
