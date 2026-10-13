@@ -93,6 +93,7 @@
       <p data-t="drop_p">Arraste a pasta de instalação do jogo para cá</p>
       <p class="small" data-t="or">ou</p>
       <button type="button" id="pickBtn" data-t="pick_btn">Selecionar pasta…</button>
+      <p><button type="button" id="reuseBtn" hidden></button></p>
       <input type="file" id="picker" webkitdirectory directory multiple hidden>
     </div>
     <label class="opt"><input type="checkbox" id="optMusic" checked>
@@ -147,7 +148,7 @@
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
-    locateFile: function (p) { return p + '?v=20261013192432'; },
+    locateFile: function (p) { return p + '?v=20261013193109'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -156,8 +157,8 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js?v=20261013192432"></script>
-<script async type="text/javascript" src="index.js?v=20261013192432"></script>
+<script src="loader.js?v=20261013193109"></script>
+<script async type="text/javascript" src="index.js?v=20261013193109"></script>
 </body>
 </html>
 
