@@ -51,8 +51,11 @@
   canvas#canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #000; outline: none; }
   #toolbar { display: flex; gap: 8px; padding: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
   #toolbar button { padding: 6px 12px; font-size: .9rem; }
-  #log { width: min(100vw, 900px); max-height: 30vh; overflow: auto; background: #0b0907; border: 1px solid var(--line);
+  #log { width: min(100vw - 16px, 900px); box-sizing: border-box; max-height: 30vh; overflow: auto; background: #0b0907; border: 1px solid var(--line);
     padding: 8px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; margin: 8px; }
+  .logbox { position: relative; }
+  .copybtn { position: absolute; top: 12px; right: 14px; z-index: 2; padding: 4px 8px; font-size: 1rem; line-height: 1; cursor: pointer; }
+  .copybtn.ok { outline: 2px solid #4a9; }
   details summary { cursor: pointer; color: var(--muted); }
 </style>
 </head>
@@ -101,7 +104,7 @@
       <li data-t="n_gog">Testado até agora com a versão da GOG, que é a recomendada. A versão da Steam pode funcionar, mas não foi verificada.</li>
       <li data-t="n_res">A resolução é fixa em 800×600 e a imagem é ampliada para caber na janela.</li>
     </ul>
-    <details><summary data-t="log_h">Registro técnico</summary><pre id="setupLog" class="small" style="white-space:pre-wrap"></pre></details>
+    <details><summary data-t="log_h">Registro técnico</summary><div class="logbox"><button type="button" class="copybtn" data-copy="setupLog" title="Copiar / Copy" aria-label="Copiar / Copy">&#x1F4CB;</button><pre id="setupLog" class="small" style="white-space:pre-wrap"></pre></div></details>
   </section>
 </main>
 
@@ -115,12 +118,13 @@
     <button type="button" class="secondary" id="logBtn" data-t="show_log">Registro</button>
     <span class="small" id="gameStatus"></span>
   </div>
-  <pre id="log" hidden></pre>
+  <div class="logbox" id="logbox" hidden><button type="button" class="copybtn" data-copy="log" title="Copiar / Copy" aria-label="Copiar / Copy">&#x1F4CB;</button><pre id="log"></pre></div>
 </div>
 
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
+    locateFile: function (p) { return p + '?v=__BUILD__'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -129,7 +133,7 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js"></script>
+<script src="loader.js?v=__BUILD__"></script>
 {{{ SCRIPT }}}
 </body>
 </html>

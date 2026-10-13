@@ -135,11 +135,30 @@
   function log(text) {
     var line = String(text);
     logLines.push(line);
-    if (logLines.length > 400) logLines.splice(0, logLines.length - 400);
+    if (logLines.length > 3000) logLines.splice(0, logLines.length - 3000);
     if (window.console) console.log(line);
-    var a = $('log'), b = $('setupLog');
-    if (a && !a.hidden) { a.textContent = logLines.join('\n'); a.scrollTop = a.scrollHeight; }
+    var a = $('log'), bx = $('logbox'), b = $('setupLog');
+    if (a && bx && !bx.hidden) { a.textContent = logLines.join('\n'); a.scrollTop = a.scrollHeight; }
     if (b) b.textContent = logLines.slice(-60).join('\n');
+  }
+
+  function copyLog(btn) {
+    var text = logLines.join('\n');
+    function done() {
+      var old = btn.textContent;
+      btn.textContent = '\u2713'; btn.classList.add('ok');
+      setTimeout(function () { btn.textContent = old; btn.classList.remove('ok'); }, 1500);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { log('copy: ' + e); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else fallback();
   }
 
   function showError(msg) {
@@ -515,6 +534,9 @@
 
     $('startBtn').addEventListener('click', start);
     $('wipeBtn').addEventListener('click', wipeData);
+    Array.prototype.forEach.call(document.querySelectorAll('.copybtn'), function (btn) {
+      btn.addEventListener('click', function () { copyLog(btn); });
+    });
     try { if (localStorage.getItem('sk2-persist') === '0') $('optPersist').checked = false; } catch (e) {}
 
     $('fsBtn').addEventListener('click', function () {
@@ -527,10 +549,11 @@
       persistNow().then(function () { $('gameStatus').textContent = tr('saved'); $('canvas').focus(); });
     });
     $('logBtn').addEventListener('click', function () {
-      var l = $('log');
-      l.hidden = !l.hidden;
-      $('logBtn').textContent = l.hidden ? tr('show_log') : tr('hide_log');
-      if (!l.hidden) { l.textContent = logLines.join('\n'); l.scrollTop = l.scrollHeight; }
+      var box = $('logbox'), l = $('log');
+      box.hidden = !box.hidden;
+      l.hidden = box.hidden;
+      $('logBtn').textContent = box.hidden ? tr('show_log') : tr('hide_log');
+      if (!box.hidden) { l.textContent = logLines.join('\n'); l.scrollTop = l.scrollHeight; }
     });
   }
 
