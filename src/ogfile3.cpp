@@ -1042,12 +1042,21 @@ int NationArray::read_file(File* filePtr)
 //
 int Nation::write_file(File* filePtr)
 {
+#ifdef __EMSCRIPTEN_WEB__
+	printf("Nation::write_file pos=%d sizeof(Nation)=%d\n", (int)filePtr->file_pos(), (int)sizeof(Nation));
+#endif
 	if( !filePtr->file_write( this, sizeof(Nation) ) )
 		return 0;
 
 	//----------- write AI Action Array ------------//
 
+#ifdef __EMSCRIPTEN_WEB__
+	printf("action_array write pos=%d\n", (int)filePtr->file_pos());
+#endif
 	action_array.write_file(filePtr);
+#ifdef __EMSCRIPTEN_WEB__
+	printf("action_array write done pos=%d\n", (int)filePtr->file_pos());
+#endif
 
 	//------ write AI info array ---------//
 
@@ -1089,6 +1098,9 @@ int Nation::write_file(File* filePtr)
 //
 static void write_ai_info(File* filePtr, short* aiInfoArray, short aiInfoCount, short aiInfoSize)
 {
+#ifdef __EMSCRIPTEN_WEB__
+	printf("write_ai_info pos=%d count=%d size=%d\n", (int)filePtr->file_pos(), (int)aiInfoCount, (int)aiInfoSize);
+#endif
 	filePtr->file_put_short( aiInfoCount );
 	filePtr->file_put_short( aiInfoSize  );
 	filePtr->file_write( aiInfoArray, sizeof(short) * aiInfoCount );
@@ -1110,6 +1122,9 @@ int Nation::read_file(File* filePtr)
 
 	//--------------------------------------------------//
 
+#ifdef __EMSCRIPTEN_WEB__
+	printf("Nation::read_file pos=%d sizeof(Nation)=%d\n", (int)filePtr->file_pos(), (int)sizeof(Nation));
+#endif
 	if( !filePtr->file_read( this, sizeof(Nation) ) )
 		return 0;
 
@@ -1123,7 +1138,13 @@ int Nation::read_file(File* filePtr)
 
 	//-------------- read AI Action Array --------------//
 
+#ifdef __EMSCRIPTEN_WEB__
+	printf("action_array pos=%d\n", (int)filePtr->file_pos());
+#endif
 	action_array.read_file(filePtr);
+#ifdef __EMSCRIPTEN_WEB__
+	printf("action_array done pos=%d\n", (int)filePtr->file_pos());
+#endif
 
 	//------ write AI info array ---------//
 
@@ -1167,6 +1188,11 @@ static void read_ai_info(File* filePtr, short** aiInfoArrayPtr, short& aiInfoCou
 {
 	aiInfoCount = filePtr->file_get_short();
 	aiInfoSize  = filePtr->file_get_short();
+#ifdef __EMSCRIPTEN_WEB__
+	printf("read_ai_info pos=%d count=%d size=%d\n", (int)filePtr->file_pos(), (int)aiInfoCount, (int)aiInfoSize);
+	if( aiInfoSize < 0 || aiInfoCount < 0 || aiInfoCount > aiInfoSize )
+		return;		// corrupted/desynchronised data: avoid a huge allocation
+#endif
 
 	*aiInfoArrayPtr = (short*) mem_add( aiInfoSize * sizeof(short) );
 
