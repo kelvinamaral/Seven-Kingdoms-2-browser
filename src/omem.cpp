@@ -112,6 +112,9 @@ char* Mem::add(unsigned memSize, const char* fileName, int fileLine)
 
    if ( allocPtr == NULL )
    {
+#ifdef __EMSCRIPTEN_WEB__
+      printf("Mem::add failed: size=%u at %s:%d\n", memSize, fileName, fileLine);
+#endif
       err.mem();
       return NULL;
    }
@@ -176,6 +179,9 @@ char* Mem::add_clear(unsigned memSize, const char* fileName, int fileLine)
 
 	if ( allocPtr == NULL )
 	{
+#ifdef __EMSCRIPTEN_WEB__
+		printf("Mem::add_clear failed: size=%u at %s:%d\n", memSize, fileName, fileLine);
+#endif
 		err.mem();
 		return NULL;
 	}
@@ -296,7 +302,12 @@ char* Mem::resize(void *orgPtr, unsigned memSize, const char* fileName, int file
             newPtr = (char*) realloc( (char*)orgPtr-CHK_VAL_SIZE, memSize+CHK_VAL_SIZE*2 );
 
             if( newPtr == NULL )
+            {
+#ifdef __EMSCRIPTEN_WEB__
+               printf("Mem::resize failed: size=%u at %s:%d\n", memSize, fileName, fileLine);
+#endif
                err.mem();
+            }
 
             // set the POST_CHK_VAL again as the size of it has changed
 
