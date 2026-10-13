@@ -286,7 +286,9 @@ int Audio::stop_long_wav(int ch)
 //
 int Audio::is_long_wav_playing(int ch)
 {
-  return !Mix_Playing(ch);
+  // Music::is_playing() relies on this returning true while the track is playing
+  // (the old inverted result made Music::yield() start a new track on every call)
+  return Mix_Playing(ch);
 }
 //------- End of function Audio::is_long_wav_playing ------------//
 
