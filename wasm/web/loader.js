@@ -26,7 +26,6 @@
       imp_done: 'Importado: {n} arquivo(s). Recarregue a página para o perfil novo valer; os saves já aparecem no jogo.',
       imp_none: 'Nada para importar neste arquivo (use um .zip exportado aqui, ou arquivos .PRF/.DAT).',
       imp_err: 'Não foi possível importar: ',
-      reuse: 'Usar a mesma pasta de antes: ', reuse_denied: 'Permissão negada. Selecione a pasta de novo.',
       wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
@@ -52,7 +51,6 @@
       imp_done: 'Imported {n} file(s). Reload the page for a new profile to take effect; saves show up in the game right away.',
       imp_none: 'Nothing to import in this file (use a .zip exported here, or .PRF/.DAT files).',
       imp_err: 'Could not import: ',
-      reuse: 'Use the same folder as before: ', reuse_denied: 'Permission denied. Please select the folder again.',
       wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
@@ -117,7 +115,6 @@
     lang = l;
     try { localStorage.setItem('sk2-lang', l); } catch (e) {}
     applyUiLanguage();
-    updateReuse();
     if (cheatOpen) buildCheatPanel();
     if (picked) renderCheck(picked);          // re-render the file check in the new language
   }
@@ -519,82 +516,6 @@
     return Promise.resolve();
   }
 
-  // ---- remember the game folder (File System Access API, Chrome/Edge): only the handle is stored, never the files
-  var HANDLE_DB = 'sk2-handles', savedHandle = null;
-  function idb(mode, fn) {
-    return new Promise(function (resolve, reject) {
-      var rq;
-      try { rq = indexedDB.open(HANDLE_DB, 1); } catch (e) { return reject(e); }
-      rq.onupgradeneeded = function () { rq.result.createObjectStore('h'); };
-      rq.onerror = function () { reject(rq.error); };
-      rq.onsuccess = function () {
-        var tx = rq.result.transaction('h', mode), st = tx.objectStore('h'), r = fn(st);
-        tx.oncomplete = function () { resolve(r && r.result); rq.result.close(); };
-        tx.onerror = tx.onabort = function () { reject(tx.error); };
-      };
-    });
-  }
-  function saveHandle(h) { savedHandle = h; return idb('readwrite', function (st) { return st.put(h, 'game'); }).then(updateReuse, function () {}); }
-  function loadHandle() { return idb('readonly', function (st) { return st.get('game'); }).catch(function () { return null; }); }
-  function updateReuse() {
-    var b = $('reuseBtn');
-    if (!b) return;
-    b.hidden = !savedHandle || !!picked || started;
-    if (savedHandle) b.textContent = tr('reuse') + savedHandle.name;
-  }
-  function collectFromHandle(dir, prefix, out) {
-    var chain = Promise.resolve();
-    return (async function () {
-      for await (var pair of dir.entries()) {
-        var name = pair[0], h = pair[1];
-        if (h.kind === 'file') {
-          try { out.push(entryFromFile(await h.getFile(), prefix + name)); } catch (e) {}
-        } else if (h.kind === 'directory') {
-          await collectFromHandle(h, prefix + name + '/', out);
-        }
-      }
-      return out;
-    })();
-  }
-  function useHandle(h, interactive) {
-    var perm = h.queryPermission ? h.queryPermission({ mode: 'read' }) : Promise.resolve('granted');
-    return perm.then(function (st) {
-      if (st === 'granted') return st;
-      return interactive && h.requestPermission ? h.requestPermission({ mode: 'read' }) : st;
-    }).then(function (st) {
-      if (st !== 'granted') { if (interactive) showError(tr('reuse_denied')); return; }
-      var root = (h.name || '') + '/';
-      return collectFromHandle(h, '', []).then(function (entries) {
-        // match the layout of an <input webkitdirectory> pick: paths start with the folder name
-        entries.forEach(function (e) { e.path = root + e.path; });
-        return onPicked(entries);
-      });
-    });
-  }
-  function pickWithHandle() {
-    return window.showDirectoryPicker({ mode: 'read', id: 'sk2-game' }).then(function (h) {
-      saveHandle(h);
-      return useHandle(h, true);
-    }, function (e) {
-      if (e && e.name === 'AbortError') return;			// cancelled
-      log('showDirectoryPicker: ' + e);
-      $('picker').click();					// e.g. a folder the browser refuses: use the classic picker
-    });
-  }
-  function setupRememberedFolder() {
-    if (!window.showDirectoryPicker) return;
-    loadHandle().then(function (h) {
-      if (!h) return;
-      savedHandle = h;
-      updateReuse();
-      // if the browser still remembers the permission, load it without asking
-      if (h.queryPermission) h.queryPermission({ mode: 'read' }).then(function (st) {
-        if (st === 'granted' && !picked && !started) useHandle(h, false);
-      }, function () {});
-    });
-    $('reuseBtn').addEventListener('click', function () { if (savedHandle) useHandle(savedHandle, true); });
-  }
-
   function collectFromDrop(dataTransfer) {
     var out = [];
     var items = dataTransfer.items ? Array.prototype.slice.call(dataTransfer.items) : [];
@@ -680,7 +601,6 @@
     if (!entries.length) { showError(tr('empty')); return; }
     log(tr('scanning') + ' (' + entries.length + ')');
     picked = analyse(entries);
-    updateReuse();
     log('root="' + picked.root + '", data files=' + picked.files.length);
     renderCheck(picked);
   }
@@ -876,7 +796,6 @@
     }).then(function () {
       restorePersisted();
       picked = null;      // let the browser free the file handles
-      updateReuse();
       $('progressText').textContent = tr('starting');
       document.body.classList.add('playing');
       $('game').classList.add('on');
@@ -932,11 +851,7 @@
 
     if (!('webkitdirectory' in picker)) showError(tr('no_dir'));
 
-    $('pickBtn').addEventListener('click', function () {
-      if (window.showDirectoryPicker) pickWithHandle();
-      else picker.click();
-    });
-    setupRememberedFolder();
+    $('pickBtn').addEventListener('click', function () { picker.click(); });
     drop.addEventListener('click', function (ev) { if (ev.target === drop) picker.click(); });
     drop.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); picker.click(); }

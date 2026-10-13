@@ -30,7 +30,6 @@ Work in progress, playable. Last tested with the GOG version.
 - [x] Profile, settings and hall of fame kept in the browser (can be turned off or erased from the start page)
 - [x] Background music no longer changes track every in-game day
 - [x] Mouse capture (ESC releases it), fullscreen, system cursor hidden while playing
-- [x] Remembers the game folder (Chrome/Edge; one click to re-allow, the files themselves are never stored)
 - [x] Export/import of profile, settings and saves (a ZIP backup)
 - [x] Cheats panel (replays the game's own cheat shortcuts)
 - [x] Copy button for the technical log; English/Portuguese page
@@ -40,9 +39,9 @@ Work in progress, playable. Last tested with the GOG version.
 - [ ] Cursor can look stuck on some start screens and message boxes: press **Enter**
 - [ ] Some audio errors still appear in the log
 - [ ] Multiplayer and the intro video
-- [ ] On Firefox/Safari the game folder must be selected again on every visit (Chrome/Edge can remember it)
+- [ ] The game folder must be selected again on every visit (files are only kept in the tab's memory)
 
-**Ideas for later:** touch controls for phones/tablets.
+**Ideas for later:** remember the game folder (Chrome/Edge), touch controls for phones/tablets.
 
 ## Credits and license
 - Engine source: [mecirt/7k2](https://github.com/mecirt/7k2) (GPL v2 or later, originally by Enlight Software). This repository is based on it; see `COPYING`.
@@ -77,7 +76,6 @@ A pasta de música é grande (cerca de 470 MB): desmarque **Carregar a música**
 - [x] Perfil, configurações e hall da fama guardados no navegador (dá para desligar ou apagar na página inicial)
 - [x] A música não troca mais de faixa a cada dia do jogo
 - [x] Captura do mouse (ESC libera), tela cheia, ponteiro do sistema oculto durante o jogo
-- [x] Lembra a pasta do jogo (Chrome/Edge; um clique para permitir de novo, os arquivos em si não são guardados)
 - [x] Exportar/importar perfil, configurações e saves (backup em ZIP)
 - [x] Painel de cheats (reenvia os atalhos de trapaça do próprio jogo)
 - [x] Botão de copiar o registro técnico; página em português e inglês
@@ -87,8 +85,8 @@ A pasta de música é grande (cerca de 470 MB): desmarque **Carregar a música**
 - [ ] O cursor pode parecer travado em algumas telas iniciais e caixas de aviso: aperte **Enter**
 - [ ] Alguns erros de áudio ainda aparecem no registro
 - [ ] Multiplayer e vídeo de abertura
-- [ ] No Firefox/Safari é preciso selecionar a pasta do jogo a cada visita (Chrome/Edge conseguem lembrar)
+- [ ] É preciso selecionar a pasta do jogo a cada visita (os arquivos ficam só na memória da aba)
 
-**Ideias para depois:** controles de toque para celular e tablet.
+**Ideias para depois:** lembrar a pasta do jogo (Chrome/Edge), controles de toque para celular e tablet.
 
 **Licença:** GPL v2 ou posterior (veja `COPYING`). Projeto original: [mecirt/7k2](https://github.com/mecirt/7k2).
