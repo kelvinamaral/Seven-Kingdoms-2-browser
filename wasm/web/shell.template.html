@@ -51,6 +51,14 @@
   canvas#canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; background: #000; outline: none; }
   #toolbar { display: flex; gap: 8px; padding: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
   #toolbar button { padding: 6px 12px; font-size: .9rem; }
+  #stage { position: relative; }
+  body.playing canvas#canvas { cursor: none; }
+  #mouseHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: 90%; text-align: center;
+    background: rgba(0,0,0,.78); color: #f3e9d2; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px;
+    font-size: .85rem; pointer-events: none; transition: opacity .4s; }
+  #mouseHint.fade { opacity: 0; }
+  #stage:fullscreen { width: 100vw; height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; }
+  #stage:fullscreen canvas#canvas { width: min(100vw, calc(100vh * 4 / 3)); height: auto; }
   #log { width: min(100vw - 16px, 900px); box-sizing: border-box; max-height: 30vh; overflow: auto; background: #0b0907; border: 1px solid var(--line);
     padding: 8px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; margin: 8px; }
   .logbox { position: relative; }
@@ -111,11 +119,13 @@
 <div id="game">
   <div id="stage">
     <canvas id="canvas" width="800" height="600" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="mouseHint" hidden></div>
   </div>
   <div id="toolbar">
     <button type="button" class="secondary" id="fsBtn" data-t="fullscreen">Tela cheia</button>
     <button type="button" class="secondary" id="saveBtn" data-t="save_now">Gravar saves no navegador</button>
     <button type="button" class="secondary" id="logBtn" data-t="show_log">Registro</button>
+    <label class="small"><input type="checkbox" id="optCapture" checked> <span data-t="opt_capture">Capturar o mouse (ESC libera)</span></label>
     <span class="small" id="gameStatus"></span>
   </div>
   <div class="logbox" id="logbox" hidden><button type="button" class="copybtn" data-copy="log" title="Copiar / Copy" aria-label="Copiar / Copy">&#x1F4CB;</button><pre id="log"></pre></div>

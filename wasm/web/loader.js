@@ -21,6 +21,7 @@
       missing_opt: 'Arquivos esperados que não foram encontrados (o jogo pode falhar):',
       loading: 'Carregando', starting: 'Iniciando o jogo…', ready: 'Pronto para jogar.',
       mem_note: 'Total a carregar', saved: 'Saves gravados no navegador.',
+      hint_click: 'Clique no jogo para capturar o mouse. ESC libera o mouse.', hint_locked: 'Mouse capturado. Pressione ESC para liberar.',
       wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
@@ -41,6 +42,7 @@
       missing_opt: 'Expected files that were not found (the game may fail):',
       loading: 'Loading', starting: 'Starting the game…', ready: 'Ready to play.',
       mem_note: 'Total to load', saved: 'Saves written to the browser.',
+      hint_click: 'Click the game to capture the mouse. ESC releases it.', hint_locked: 'Mouse captured. Press ESC to release it.',
       wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
@@ -62,6 +64,7 @@
       pick_btn: 'Select folder…',
       opt_music: 'Load the music (uses a lot of memory; untick it if the browser struggles)',
       opt_persist: 'Keep profile and saves in this browser (persistence)', wipe_btn: 'Erase saved data (start from zero)',
+      opt_capture: 'Capture the mouse (ESC releases it)',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -140,6 +143,43 @@
     var a = $('log'), bx = $('logbox'), b = $('setupLog');
     if (a && bx && !bx.hidden) { a.textContent = logLines.join('\n'); a.scrollTop = a.scrollHeight; }
     if (b) b.textContent = logLines.slice(-60).join('\n');
+  }
+
+  // ---- mouse capture (Pointer Lock): keeps the pointer inside the game and hides the system cursor
+  var hintTimer = null;
+  function captureWanted() { var o = $('optCapture'); return !o || o.checked; }
+  function isLocked() { return document.pointerLockElement === $('canvas'); }
+  function requestCapture() {
+    var c = $('canvas');
+    if (!started || !captureWanted() || isLocked() || !c.requestPointerLock) return;
+    try { var r = c.requestPointerLock(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  }
+  function showHint(text, autoHideMs) {
+    var h = $('mouseHint');
+    clearTimeout(hintTimer);
+    if (!text) { h.hidden = true; return; }
+    h.textContent = text; h.hidden = false; h.classList.remove('fade');
+    if (autoHideMs) hintTimer = setTimeout(function () {
+      h.classList.add('fade');
+      hintTimer = setTimeout(function () { h.hidden = true; }, 500);
+    }, autoHideMs);
+  }
+  function updateMouseHint() {
+    if (!started) return;
+    if (isLocked()) showHint(tr('hint_locked'), 3000);
+    else if (captureWanted()) showHint(tr('hint_click'), 0);
+    else showHint('');
+  }
+  function setupMouseCapture() {
+    try { if (localStorage.getItem('sk2-capture') === '0') $('optCapture').checked = false; } catch (e) {}
+    $('canvas').addEventListener('mousedown', function () { requestCapture(); });
+    document.addEventListener('pointerlockchange', function () { updateMouseHint(); if (!isLocked()) $('canvas').focus(); });
+    $('optCapture').addEventListener('change', function () {
+      try { localStorage.setItem('sk2-capture', captureWanted() ? '1' : '0'); } catch (e) {}
+      if (!captureWanted() && isLocked()) document.exitPointerLock();
+      updateMouseHint();
+    });
+    updateMouseHint();
   }
 
   function copyLog(btn) {
@@ -462,6 +502,7 @@
       FS.chdir(GAME_DIR);
       started = true;
       scheduleAutosave();
+      updateMouseHint();
       // web_entry() runs the game's main(); with Asyncify the call resolves when the game exits
       Promise.resolve(Module.ccall('web_entry', 'number', [], [], { async: true })).then(function () {
         SevenKWeb.ended();
@@ -539,11 +580,12 @@
     });
     try { if (localStorage.getItem('sk2-persist') === '0') $('optPersist').checked = false; } catch (e) {}
 
+    setupMouseCapture();
     $('fsBtn').addEventListener('click', function () {
-      var c = $('canvas');
-      if (document.fullscreenElement) document.exitFullscreen();
-      else if (c.requestFullscreen) c.requestFullscreen();
-      c.focus();
+      var st = $('stage'), c = $('canvas');
+      if (document.fullscreenElement) { document.exitFullscreen(); c.focus(); return; }
+      var p = st.requestFullscreen ? st.requestFullscreen() : null;
+      Promise.resolve(p).then(function () { requestCapture(); c.focus(); }, function () { c.focus(); });
     });
     $('saveBtn').addEventListener('click', function () {
       persistNow().then(function () { $('gameStatus').textContent = tr('saved'); $('canvas').focus(); });

@@ -683,8 +683,33 @@ int ProcessNextEvent()
 
   // mouse events
   if (event.type == SDL_MOUSEMOTION) {
+#ifdef __EMSCRIPTEN_WEB__
+    // While the browser pointer is locked (captured) the absolute position is not
+    // meaningful, so move the game cursor by the relative motion, scaled to game pixels.
+    static bool wasLocked = false;
+    static double wx = 0, wy = 0;
+    int locked = EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; });
+    if (locked) {
+      double scale = EM_ASM_DOUBLE({ var c = Module['canvas']; var r = c.getBoundingClientRect(); return r.width > 0 ? c.width / r.width : 1; });
+      if (!wasLocked) { wx = mouse.cur_x; wy = mouse.cur_y; }
+      wx += event.motion.xrel * scale;
+      wy += event.motion.yrel * scale;
+      if (wx < 0) wx = 0;
+      if (wy < 0) wy = 0;
+      if (wx > VGA_WIDTH - 1) wx = VGA_WIDTH - 1;
+      if (wy > VGA_HEIGHT - 1) wy = VGA_HEIGHT - 1;
+      mouse.cur_x = (int) wx;
+      mouse.cur_y = (int) wy;
+    }
+    else {
+      mouse.cur_x = event.motion.x;
+      mouse.cur_y = event.motion.y;
+    }
+    wasLocked = locked != 0;
+#else
     mouse.cur_x = event.motion.x;
     mouse.cur_y = event.motion.y;
+#endif
 
     switch (mouse.bound_type)
     {
@@ -724,8 +749,17 @@ int ProcessNextEvent()
         ev.event_type = press ? RIGHT_BUTTON : RIGHT_BUTTON_RELEASE;
       }
 
-      ev.x = event.button.x;
-      ev.y = event.button.y;
+#ifdef __EMSCRIPTEN_WEB__
+      if (EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; })) {
+        ev.x = mouse.cur_x;			// absolute coordinates are not valid while the pointer is locked
+        ev.y = mouse.cur_y;
+      }
+      else
+#endif
+      {
+        ev.x = event.button.x;
+        ev.y = event.button.y;
+      }
       ev.time = m.get_time();
       ev.scan_code = 0;
       ev.skey_state = mouse.skey_state;
