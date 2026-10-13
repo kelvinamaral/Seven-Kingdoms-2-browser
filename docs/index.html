@@ -132,6 +132,9 @@
   <div id="toolbar">
     <button type="button" class="secondary" id="fsBtn" data-t="fullscreen">Tela cheia</button>
     <button type="button" class="secondary" id="saveBtn" data-t="save_now">Gravar saves no navegador</button>
+    <button type="button" class="secondary" id="exportBtn" data-t="export_btn">Exportar saves</button>
+    <button type="button" class="secondary" id="importBtn" data-t="import_btn">Importar saves</button>
+    <input type="file" id="importInput" accept=".zip,.prf,.dat" multiple hidden>
     <button type="button" class="secondary" id="cheatBtn" data-t="cheats">Cheats</button>
     <button type="button" class="secondary" id="logBtn" data-t="show_log">Registro</button>
     <label class="small"><input type="checkbox" id="optCapture" checked> <span data-t="opt_capture">Capturar o mouse (ESC libera)</span></label>
@@ -144,7 +147,7 @@
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
-    locateFile: function (p) { return p + '?v=20261013190201'; },
+    locateFile: function (p) { return p + '?v=20261013191257'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -153,8 +156,8 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js?v=20261013190201"></script>
-<script async type="text/javascript" src="index.js?v=20261013190201"></script>
+<script src="loader.js?v=20261013191257"></script>
+<script async type="text/javascript" src="index.js?v=20261013191257"></script>
 </body>
 </html>
 

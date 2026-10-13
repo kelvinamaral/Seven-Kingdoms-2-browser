@@ -22,6 +22,10 @@
       loading: 'Carregando', starting: 'Iniciando o jogo…', ready: 'Pronto para jogar.',
       mem_note: 'Total a carregar', saved: 'Saves gravados no navegador.',
       hint_click: 'Clique no jogo para capturar o mouse. ESC libera o mouse.', hint_locked: 'Mouse capturado. Pressione ESC para liberar.',
+      exp_done: 'Backup exportado (perfil, configurações e saves).', exp_none: 'Não há dados para exportar ainda.',
+      imp_done: 'Importado: {n} arquivo(s). Recarregue a página para o perfil novo valer; os saves já aparecem no jogo.',
+      imp_none: 'Nada para importar neste arquivo (use um .zip exportado aqui, ou arquivos .PRF/.DAT).',
+      imp_err: 'Não foi possível importar: ',
       wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
@@ -43,6 +47,10 @@
       loading: 'Loading', starting: 'Starting the game…', ready: 'Ready to play.',
       mem_note: 'Total to load', saved: 'Saves written to the browser.',
       hint_click: 'Click the game to capture the mouse. ESC releases it.', hint_locked: 'Mouse captured. Press ESC to release it.',
+      exp_done: 'Backup exported (profile, settings and saves).', exp_none: 'There is no data to export yet.',
+      imp_done: 'Imported {n} file(s). Reload the page for a new profile to take effect; saves show up in the game right away.',
+      imp_none: 'Nothing to import in this file (use a .zip exported here, or .PRF/.DAT files).',
+      imp_err: 'Could not import: ',
       wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
@@ -66,6 +74,7 @@
       opt_persist: 'Keep profile and saves in this browser (persistence)', wipe_btn: 'Erase saved data (start from zero)',
       opt_capture: 'Capture the mouse (ESC releases it)',
       cheats: 'Cheats',
+      export_btn: 'Export saves', import_btn: 'Import saves',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -315,6 +324,118 @@
     if (cheatOpen) { buildCheatPanel(); if (isLocked()) document.exitPointerLock(); }
     $('cheatPanel').hidden = !cheatOpen;
     updateMouseHint();
+  }
+
+  // ---- export / import of saves, profile and settings (a plain ZIP, no external library)
+  var crcTable = null;
+  function crc32(buf) {
+    if (!crcTable) {
+      crcTable = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
+    }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < buf.length; i++) crc = crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function collectUserFiles() {		// [{name, data}] : root profile/config files and everything under Save/
+    var out = [];
+    rootFiles().forEach(function (n) { out.push({ name: n, data: FS.readFile(GAME_DIR + '/' + n) }); });
+    (function walk(dir, rel) {
+      var names = [];
+      try { names = FS.readdir(dir); } catch (e) { return; }
+      names.forEach(function (n) {
+        if (n === '.' || n === '..') return;
+        var p = dir + '/' + n, r = rel + '/' + n, st;
+        try { st = FS.stat(p); } catch (e) { return; }
+        if (FS.isDir(st.mode)) walk(p, r); else out.push({ name: r, data: FS.readFile(p) });
+      });
+    })(GAME_DIR + '/Save', 'Save');
+    return out;
+  }
+  function makeZip(files) {
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    function u16(v) { return [v & 255, (v >> 8) & 255]; }
+    function u32(v) { return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+    var d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)),
+        dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate());
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var head = new Uint8Array([].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(dt), u16(dd),
+        u32(crc), u32(size), u32(size), u16(name.length), u16(0)));
+      parts.push(head, name, f.data);
+      central.push(new Uint8Array([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(dt), u16(dd),
+        u32(crc), u32(size), u32(size), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), name);
+      offset += head.length + name.length + size;
+    });
+    var cdSize = central.reduce(function (s, a) { return s + a.length; }, 0);
+    var end = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+    return new Blob(parts.concat(central, [end]), { type: 'application/zip' });
+  }
+  function exportSaves() {
+    if (!started) return;
+    var files = collectUserFiles();
+    if (!files.length) { $('gameStatus').textContent = tr('exp_none'); return; }
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(makeZip(files));
+    a.download = 'seven-kingdoms-2-backup-' + new Date().toISOString().slice(0, 10) + '.zip';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    $('gameStatus').textContent = tr('exp_done');
+  }
+  function inflateRaw(bytes) {
+    var ds = new DecompressionStream('deflate-raw');
+    return new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+  }
+  function readZip(buf) {		// -> Promise<[{name, data}]>
+    var v = new DataView(buf.buffer, buf.byteOffset, buf.byteLength), dec = new TextDecoder(), i = buf.length - 22;
+    for (; i >= 0 && v.getUint32(i, true) !== 0x06054b50; i--) {}
+    if (i < 0) return Promise.reject(new Error('not a zip file'));
+    var count = v.getUint16(i + 10, true), pos = v.getUint32(i + 16, true), jobs = [];
+    for (var n = 0; n < count; n++) {
+      if (v.getUint32(pos, true) !== 0x02014b50) break;
+      var method = v.getUint16(pos + 10, true), csize = v.getUint32(pos + 20, true),
+          nlen = v.getUint16(pos + 28, true), elen = v.getUint16(pos + 30, true), clen = v.getUint16(pos + 32, true),
+          lho = v.getUint32(pos + 42, true), name = dec.decode(buf.subarray(pos + 46, pos + 46 + nlen));
+      pos += 46 + nlen + elen + clen;
+      if (/\/$/.test(name)) continue;
+      var ds = lho + 30 + v.getUint16(lho + 26, true) + v.getUint16(lho + 28, true);
+      var raw = buf.subarray(ds, ds + csize);
+      jobs.push((method === 0 ? Promise.resolve(raw) : method === 8 ? inflateRaw(raw) : Promise.reject(new Error('unsupported zip method')))
+        .then((function (nm) { return function (data) { return { name: nm, data: data }; }; })(name)));
+    }
+    return Promise.all(jobs);
+  }
+  function safeDest(name) {		// only Save/** and profile/config files at the root; no path tricks
+    name = String(name).replace(/\\/g, '/').replace(/^\.?\/+/, '');
+    if (name.split('/').some(function (p) { return p === '..' || p === ''; })) return null;
+    var parts = name.split('/');
+    if (parts.length === 1) return ROOT_FILES.test(parts[0]) ? parts[0] : null;
+    if (parts[0].toLowerCase() === 'save') { parts[0] = 'Save'; return parts.join('/'); }
+    return null;
+  }
+  function importSaves(fileList) {
+    var jobs = [];
+    Array.prototype.forEach.call(fileList, function (f) {
+      jobs.push(f.arrayBuffer().then(function (ab) {
+        var u8 = new Uint8Array(ab);
+        return /\.zip$/i.test(f.name) ? readZip(u8) : [{ name: f.name, data: u8 }];
+      }));
+    });
+    return Promise.all(jobs).then(function (lists) {
+      var n = 0;
+      lists.forEach(function (list) {
+        list.forEach(function (e) {
+          var dest = safeDest(e.name);
+          if (!dest) return;
+          var full = GAME_DIR + '/' + dest, dir = full.slice(0, full.lastIndexOf('/'));
+          FS.mkdirTree(dir);
+          FS.writeFile(full, e.data);
+          n++;
+        });
+      });
+      if (!n) { $('gameStatus').textContent = tr('imp_none'); return; }
+      return persistNow().then(function () { $('gameStatus').textContent = tr('imp_done').replace('{n}', n); });
+    }).catch(function (e) { $('gameStatus').textContent = tr('imp_err') + (e && e.message ? e.message : e); });
   }
 
   function copyLog(btn) {
@@ -711,6 +832,9 @@
     $('startBtn').addEventListener('click', start);
     $('wipeBtn').addEventListener('click', wipeData);
     $('cheatBtn').addEventListener('click', toggleCheats);
+    $('exportBtn').addEventListener('click', exportSaves);
+    $('importBtn').addEventListener('click', function () { $('importInput').value = ''; $('importInput').click(); });
+    $('importInput').addEventListener('change', function () { if (this.files && this.files.length) importSaves(this.files); });
     Array.prototype.forEach.call(document.querySelectorAll('.copybtn'), function (btn) {
       btn.addEventListener('click', function () { copyLog(btn); });
     });
