@@ -489,8 +489,9 @@
     var dt = Math.min(50, now - (pad.last || now)) / 1000; pad.last = now;
     var ax = gp.axes, b = gp.buttons;
     function dz(v) { var a = Math.abs(v); if (a < 0.18) return 0; a = (a - 0.18) / 0.82; return (v < 0 ? -1 : 1) * a * a; }
-    // left stick: cursor
-    var sx = dz(ax[0] || 0), sy = dz(ax[1] || 0);
+    // both sticks move the cursor (the game scrolls the map when the cursor touches the screen edge)
+    var sx = dz(ax[0] || 0) + dz(ax[2] || 0), sy = dz(ax[1] || 0) + dz(ax[3] || 0);
+    sx = Math.max(-1, Math.min(1, sx)); sy = Math.max(-1, Math.min(1, sy));
     if (sx || sy) {
       var speed = 700 * dt, dx = sx * speed + pad.fx, dy = sy * speed + pad.fy;
       var ix = Math.trunc(dx), iy = Math.trunc(dy);
@@ -500,13 +501,16 @@
       pad.x = nx; pad.y = ny;
       if (mx || my) { var k = canvasScale(); padMouse('mousemove', 0, mx / k.s, my / k.s); }
     }
-    // right stick or d-pad: scroll the map with the arrow keys
-    var rx = ax[2] || 0, ry = ax[3] || 0;
+    // d-pad: scroll the map (the game's Ctrl+arrow shortcut, repeated while held)
     function pressed(i) { return b[i] && b[i].pressed; }
-    padArrow(37, rx < -0.45 || pressed(14));
-    padArrow(39, rx > 0.45 || pressed(15));
-    padArrow(38, ry < -0.45 || pressed(12));
-    padArrow(40, ry > 0.45 || pressed(13));
+    var dpad = pressed(14) ? 37 : pressed(15) ? 39 : pressed(12) ? 38 : pressed(13) ? 40 : 0;
+    if (dpad) {
+      if (!pad.ctrl) { pad.ctrl = true; fireKey('keydown', 'Control', 'ControlLeft', KC.ctrl[0], ['ctrl']); }
+      if (now - (pad.rep || 0) > 35) {
+        pad.rep = now; var nm = ARROWS[dpad];
+        fireKey('keydown', nm, nm, dpad, ['ctrl']); fireKey('keyup', nm, nm, dpad, ['ctrl']);
+      }
+    } else if (pad.ctrl) { pad.ctrl = false; fireKey('keyup', 'Control', 'ControlLeft', KC.ctrl[0], []); }
     // buttons (edge detected): A=left click, B=right click, X=Enter, Start=ESC, Back=Enter
     function edge(i, onDown, onUp) {
       var now = pressed(i), was = !!pad.prev[i];
