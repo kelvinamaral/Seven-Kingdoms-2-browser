@@ -41,6 +41,8 @@ Work in progress, playable. Last tested with the **GOG** version.
 
 ### Known issues / not working yet
 - [ ] Cursor can look stuck on some start screens and message boxes: press **Enter**
+- [ ] **Right-click fires twice**: expelling a unit from a fort with the right button expels two units (seen with mouse and gamepad). Logs show two `mobilize_soldier` calls 18-85 ms apart, so two separate right-click events reach the game; cause not found yet
+- [ ] Controller: untested on real hardware after the latest rewrite; an `unreachable` crash was seen once while saving (Start/ESC pressed at that moment), not reproduced
 - [ ] Tutorial and the saves/scenarios shipped with the GOG HD version (a different file format than this engine)
 - [ ] Some audio errors still appear in the log
 - [ ] Multiplayer and the intro video (not available in the web version)
@@ -96,6 +98,8 @@ Em desenvolvimento, já jogável. Último teste com a versão da **GOG**.
 
 ### Problemas conhecidos / ainda não funciona
 - [ ] O cursor pode parecer travado em algumas telas iniciais e caixas de aviso: aperte **Enter**
+- [ ] **Botão direito dispara duas vezes**: expulsar uma unidade de um forte com o botão direito expulsa duas unidades (acontece com mouse e controle). Os logs mostram duas chamadas de `mobilize_soldier` com 18-85 ms de diferença, ou seja, dois eventos de clique direito chegam ao jogo; causa ainda não encontrada
+- [ ] Controle: não testado em hardware real depois da última reescrita; um erro `unreachable` apareceu uma vez ao salvar (Start/ESC apertado nesse momento), não reproduzido
 - [ ] Tutorial e os saves/cenários que vêm com a versão HD da GOG (formato de arquivo diferente do deste motor)
 - [ ] Alguns erros de áudio ainda aparecem no registro
 - [ ] Multiplayer e vídeo de abertura (não existem na versão web)
