@@ -430,6 +430,9 @@ int FirmCamp::mobilize_overseer()
 //
 int FirmCamp::mobilize_soldier(int soldierId, char remoteAction)
 {
+#ifdef __EMSCRIPTEN_WEB__
+	printf("mobilize_soldier id=%d count=%d t=%u\n", soldierId, (int)soldier_count, (unsigned)m.get_time());
+#endif
 	if(!remoteAction && remote.is_enable() )
 	{
 		// packet strcture : <firm_recno> <soldierId>

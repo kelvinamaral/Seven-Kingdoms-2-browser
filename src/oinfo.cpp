@@ -1145,6 +1145,10 @@ int Info::draw_unit_icon( int x, int y, int unitId, int nationRecno,
 		{
 			rc &= ~16;		// clear bit 4
 		}
+#ifdef __EMSCRIPTEN_WEB__
+		else if( para & 16 )
+			mouse.reset_click();		// consume the right click so a second detector in the same pass cannot act on it again
+#endif
 
 	}
 	else
