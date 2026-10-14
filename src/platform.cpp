@@ -658,6 +658,13 @@ int PollInputDevices ()
 // Game cursor position tracked by us (game pixels). SDL's own absolute position is not
 // reliable while the browser pointer is locked, so it is bypassed in that state.
 static double web_cx = 0, web_cy = 0;
+static bool web_pad_ctl = false;		// true while a game controller drives the cursor
+static int  web_pad_dx = 0, web_pad_dy = 0;	// pending controller cursor motion (game pixels)
+static int  web_pad_q[32], web_pad_qn = 0;		// pending controller buttons: 1/2 = left/right press, -1/-2 = release
+extern "C" {
+EMSCRIPTEN_KEEPALIVE void web_pad_move (int dx, int dy) { web_pad_dx += dx; web_pad_dy += dy; }
+EMSCRIPTEN_KEEPALIVE void web_pad_button (int code) { if (web_pad_qn < 32) web_pad_q[web_pad_qn++] = code; }
+}
 static bool web_is_locked ()
 {
   return EM_ASM_INT({ return document.pointerLockElement === Module['canvas'] ? 1 : 0; }) != 0;
@@ -667,7 +674,7 @@ static bool web_is_locked ()
 void GetMousePos (int *x, int *y)
 {
 #ifdef __EMSCRIPTEN_WEB__
-  if (web_is_locked ()) {
+  if (web_is_locked () || web_pad_ctl) {
     *x = (int) web_cx;
     *y = (int) web_cy;
     return;
@@ -681,15 +688,89 @@ void SetMousePos (int x, int y)
 #ifdef __EMSCRIPTEN_WEB__
   web_cx = x;
   web_cy = y;
-  if (web_is_locked ()) return;
+  if (web_is_locked () || web_pad_ctl) return;
 #endif
   SDL_WarpMouse (x, y);
 }
 
 
 // Get next event. Return 0 if the process is to end, 1 if a message was processed, 2 if there was no message
+#ifdef __EMSCRIPTEN_WEB__
+static void web_apply_bound ()
+{
+  switch (mouse.bound_type)
+  {
+    case 0:
+      if (mouse.cur_x < mouse.bound_x1) mouse.cur_x = mouse.bound_x1;
+      if (mouse.cur_x > mouse.bound_x2) mouse.cur_x = mouse.bound_x2;
+      if (mouse.cur_y < mouse.bound_y1) mouse.cur_y = mouse.bound_y1;
+      if (mouse.cur_y > mouse.bound_y2) mouse.cur_y = mouse.bound_y2;
+      break;
+    case 1:
+      {
+        int boundMargin = abs(mouse.cur_x - (mouse.bound_x1+mouse.bound_x2)/2);
+        if (mouse.cur_y < mouse.bound_y1+boundMargin) mouse.cur_y = mouse.bound_y1+boundMargin;
+        if (mouse.cur_y > mouse.bound_y2-boundMargin) mouse.cur_y = mouse.bound_y2-boundMargin;
+        boundMargin = abs(mouse.cur_y - (mouse.bound_y1 + mouse.bound_y2)/2);
+        if (mouse.cur_x < mouse.bound_x1+boundMargin) mouse.cur_x = mouse.bound_x1+boundMargin;
+        if (mouse.cur_x > mouse.bound_x2-boundMargin) mouse.cur_x = mouse.bound_x2-boundMargin;
+      }
+      break;
+  }
+}
+
+// Controller input queued by JavaScript is applied here, on the game's own thread of execution.
+static int web_process_pad ()
+{
+  int did = 0;
+  if (web_pad_dx || web_pad_dy) {
+    if (!web_pad_ctl) {			// start from wherever the game cursor currently is
+      web_pad_ctl = true;
+      web_cx = mouse.cur_x; web_cy = mouse.cur_y;
+    }
+    web_cx += web_pad_dx; web_cy += web_pad_dy;
+    web_pad_dx = web_pad_dy = 0;
+    if (web_cx < 0) web_cx = 0;
+    if (web_cy < 0) web_cy = 0;
+    if (web_cx > VGA_WIDTH - 1) web_cx = VGA_WIDTH - 1;
+    if (web_cy > VGA_HEIGHT - 1) web_cy = VGA_HEIGHT - 1;
+    mouse.cur_x = (int) web_cx;
+    mouse.cur_y = (int) web_cy;
+    web_apply_bound ();
+    if ((int) web_cx != mouse.cur_x) web_cx = mouse.cur_x;
+    if ((int) web_cy != mouse.cur_y) web_cy = mouse.cur_y;
+    mouse_cursor.process(mouse.cur_x, mouse.cur_y);
+    power.mouse_handler();
+    did = 1;
+  }
+  for (int i = 0; i < web_pad_qn; i++) {
+    int code = web_pad_q[i], btn = code < 0 ? -code : code, press = code > 0;
+    MouseEvent ev;
+    if (btn == 1) {
+      mouse.left_press = press ? LEFT_BUTTON_MASK : 0;
+      ev.event_type = press ? LEFT_BUTTON : LEFT_BUTTON_RELEASE;
+    } else {
+      mouse.right_press = press ? RIGHT_BUTTON_MASK : 0;
+      ev.event_type = press ? RIGHT_BUTTON : RIGHT_BUTTON_RELEASE;
+    }
+    ev.x = mouse.cur_x; ev.y = mouse.cur_y;
+    ev.time = m.get_time();
+    ev.scan_code = 0;
+    ev.skey_state = mouse.skey_state;
+    mouse.add_event(&ev);
+    if (!press && btn == 1) mouse.reset_boundary();
+    did = 1;
+  }
+  web_pad_qn = 0;
+  return did;
+}
+#endif
+
 int ProcessNextEvent()
 {
+#ifdef __EMSCRIPTEN_WEB__
+  if (web_process_pad ()) return 1;
+#endif
   if (!waitingEvent) {  // if an event is waiting, we process that, otherwise grab the next one
     if (!SDL_PollEvent (&event)) {
 #ifdef __EMSCRIPTEN_WEB__
@@ -725,6 +806,7 @@ int ProcessNextEvent()
       mouse.cur_y = (int) web_cy;
     }
     else {
+      web_pad_ctl = false;
       mouse.cur_x = event.motion.x;
       mouse.cur_y = event.motion.y;
       web_cx = mouse.cur_x;
@@ -778,7 +860,7 @@ int ProcessNextEvent()
       }
 
 #ifdef __EMSCRIPTEN_WEB__
-      if (web_is_locked ()) {
+      if (web_is_locked () || web_pad_ctl) {
         ev.x = mouse.cur_x;			// absolute coordinates are not valid while the pointer is locked
         ev.y = mouse.cur_y;
       }

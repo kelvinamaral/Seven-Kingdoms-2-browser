@@ -944,6 +944,9 @@ int GameFile::read_file_3(File* filePtr)
 //
 void GameFile::write_book_mark(short bookMark)
 {
+#ifdef __EMSCRIPTEN_WEB__
+	printf("write_book_mark %d\n", (int)bookMark);
+#endif
 	sys.yield();
 
 	file_ptr->file_put_short(bookMark);

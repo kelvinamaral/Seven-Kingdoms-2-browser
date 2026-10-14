@@ -26,7 +26,7 @@
       imp_done: 'Importado: {n} arquivo(s). Recarregue a página para o perfil novo valer; os saves já aparecem no jogo.',
       imp_none: 'Nada para importar neste arquivo (use um .zip exportado aqui, ou arquivos .PRF/.DAT).',
       imp_err: 'Não foi possível importar: ',
-      pad_on: 'Controle conectado: ', pad_hint: 'Controle: analógico esq. = cursor, analógico dir./direcional = mapa, A = clique, B = clique direito, X = Enter, Start = ESC.',
+      pad_on: 'Controle conectado: ', pad_hint: 'Controle: analógico dir. = cursor, analógico esq./direcional = mapa, A = clique, B = clique direito, X = Enter, Start = ESC.',
       wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
@@ -52,7 +52,7 @@
       imp_done: 'Imported {n} file(s). Reload the page for a new profile to take effect; saves show up in the game right away.',
       imp_none: 'Nothing to import in this file (use a .zip exported here, or .PRF/.DAT files).',
       imp_err: 'Could not import: ',
-      pad_on: 'Controller connected: ', pad_hint: 'Controller: left stick = cursor, right stick/d-pad = map, A = click, B = right click, X = Enter, Start = ESC.',
+      pad_on: 'Controller connected: ', pad_hint: 'Controller: right stick = cursor, left stick/d-pad = map, A = click, B = right click, X = Enter, Start = ESC.',
       wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
@@ -489,21 +489,18 @@
     var dt = Math.min(50, now - (pad.last || now)) / 1000; pad.last = now;
     var ax = gp.axes, b = gp.buttons;
     function dz(v) { var a = Math.abs(v); if (a < 0.18) return 0; a = (a - 0.18) / 0.82; return (v < 0 ? -1 : 1) * a * a; }
-    // both sticks move the cursor (the game scrolls the map when the cursor touches the screen edge)
-    var sx = dz(ax[0] || 0) + dz(ax[2] || 0), sy = dz(ax[1] || 0) + dz(ax[3] || 0);
-    sx = Math.max(-1, Math.min(1, sx)); sy = Math.max(-1, Math.min(1, sy));
+    // right stick: cursor (moved by the engine itself, see web_pad_move in platform.cpp)
+    var sx = dz(ax[2] || 0), sy = dz(ax[3] || 0);
     if (sx || sy) {
       var speed = 700 * dt, dx = sx * speed + pad.fx, dy = sy * speed + pad.fy;
       var ix = Math.trunc(dx), iy = Math.trunc(dy);
       pad.fx = dx - ix; pad.fy = dy - iy;
-      var nx = Math.max(0, Math.min(799, pad.x + ix)), ny = Math.max(0, Math.min(599, pad.y + iy));
-      var mx = nx - pad.x, my = ny - pad.y;
-      pad.x = nx; pad.y = ny;
-      if (mx || my) { var k = canvasScale(); padMouse('mousemove', 0, mx / k.s, my / k.s); }
+      if ((ix || iy) && Module._web_pad_move) Module._web_pad_move(ix, iy);
     }
-    // d-pad: scroll the map (the game's Ctrl+arrow shortcut, repeated while held)
+    // left stick or d-pad: scroll the map (the game's Ctrl+arrow shortcut, repeated while held)
     function pressed(i) { return b[i] && b[i].pressed; }
-    var dpad = pressed(14) ? 37 : pressed(15) ? 39 : pressed(12) ? 38 : pressed(13) ? 40 : 0;
+    var lx = ax[0] || 0, ly = ax[1] || 0;
+    var dpad = pressed(14) || lx < -0.4 ? 37 : pressed(15) || lx > 0.4 ? 39 : pressed(12) || ly < -0.4 ? 38 : pressed(13) || ly > 0.4 ? 40 : 0;
     if (dpad) {
       if (!pad.ctrl) { pad.ctrl = true; fireKey('keydown', 'Control', 'ControlLeft', KC.ctrl[0], ['ctrl']); }
       if (now - (pad.rep || 0) > 35) {
@@ -517,8 +514,8 @@
       if (now && !was) onDown(); else if (!now && was && onUp) onUp();
       pad.prev[i] = now;
     }
-    edge(0, function () { pad.prev.__down = true; padMouse('mousedown', 0); }, function () { padMouse('mouseup', 0); pad.prev.__down = false; });
-    edge(1, function () { padMouse('mousedown', 2); }, function () { padMouse('mouseup', 2); });
+    edge(0, function () { Module._web_pad_button(1); }, function () { Module._web_pad_button(-1); });
+    edge(1, function () { Module._web_pad_button(2); }, function () { Module._web_pad_button(-2); });
     edge(2, function () { padKey(true, 13); }, function () { padKey(false, 13); });
     edge(9, function () { padKey(true, 27); }, function () { padKey(false, 27); });
     edge(8, function () { padKey(true, 13); }, function () { padKey(false, 13); });
