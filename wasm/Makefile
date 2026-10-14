@@ -24,7 +24,7 @@ LDFLAGS  = -O2 -sUSE_SDL=1 \
            -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=2147483648 \
            -sTOTAL_STACK=5242880 \
            -lidbfs.js -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 \
-           -sEXPORTED_FUNCTIONS=_web_entry,_web_pad_move,_web_pad_button -sEXPORTED_RUNTIME_METHODS=FS,ccall \
+           -sEXPORTED_FUNCTIONS=_web_entry,_web_pad_move,_web_pad_button,_web_pad_abs -sEXPORTED_RUNTIME_METHODS=FS,ccall \
            -sMINIFY_HTML=0 --shell-file web/shell.template.html
 
 vpath %.cpp $(SRC) $(SRC)/src web

@@ -78,6 +78,7 @@
       cheats: 'Cheats',
       export_btn: 'Export saves', import_btn: 'Import saves',
       opt_pad: 'Controller (Xbox/PS4)',
+      opt_touch: 'Touch controls',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -532,6 +533,77 @@
     requestAnimationFrame(padFrame);
   }
 
+  // ---- touch controls: tap/drag = click at that spot, joystick = scroll map, buttons = right-click toggle / Enter / Esc / keyboard
+  var touch = { rightMode: false, dir: 0, rep: 0, ctrl: false, id: null, joyId: null };
+  function touchEnabled() { var o = $('optTouch'); return !!o && o.checked; }
+  function updateTouchUi() { $('touchUi').hidden = !(started && touchEnabled()); }
+  function toGame(t) {
+    var k = canvasScale();
+    return [Math.max(0, Math.min(799, Math.round((t.clientX - k.r.left) * k.s))), Math.max(0, Math.min(599, Math.round((t.clientY - k.r.top) * k.s)))];
+  }
+  function touchLoop(now) {
+    requestAnimationFrame(touchLoop);
+    var want = touchEnabled() && started ? touch.dir : 0;
+    if (want) {
+      if (!touch.ctrl) { touch.ctrl = true; fireKey('keydown', 'Control', 'ControlLeft', KC.ctrl[0], ['ctrl']); }
+      if (now - touch.rep > 35) { touch.rep = now; var nm = ARROWS[want]; fireKey('keydown', nm, nm, want, ['ctrl']); fireKey('keyup', nm, nm, want, ['ctrl']); }
+    } else if (touch.ctrl) { touch.ctrl = false; fireKey('keyup', 'Control', 'ControlLeft', KC.ctrl[0], []); }
+  }
+  function setupTouch() {
+    var c = $('canvas'), joy = $('joy'), knob = $('knob'), o = $('optTouch');
+    try { if (window.matchMedia('(pointer: coarse)').matches) o.checked = true; } catch (e) {}
+    o.addEventListener('change', updateTouchUi);
+    var btn = function () { return touch.rightMode ? 2 : 1; };
+    function canvasTouch(ev, kind) {
+      if (!touchEnabled() || !started) return;
+      ev.preventDefault();
+      var t = ev.changedTouches[0];
+      if (kind === 'start') { if (touch.id !== null) return; touch.id = t.identifier; }
+      else if (t.identifier !== touch.id) { for (var i = 0; i < ev.changedTouches.length; i++) if (ev.changedTouches[i].identifier === touch.id) t = ev.changedTouches[i]; if (t.identifier !== touch.id) return; }
+      var g = toGame(t);
+      Module._web_pad_abs(g[0], g[1]);
+      if (kind === 'start') Module._web_pad_button(btn());
+      if (kind === 'end') { Module._web_pad_button(-btn()); touch.id = null; }
+    }
+    c.addEventListener('touchstart', function (e) { canvasTouch(e, 'start'); }, { passive: false });
+    c.addEventListener('touchmove', function (e) { canvasTouch(e, 'move'); }, { passive: false });
+    c.addEventListener('touchend', function (e) { canvasTouch(e, 'end'); }, { passive: false });
+    c.addEventListener('touchcancel', function (e) { canvasTouch(e, 'end'); }, { passive: false });
+    // joystick
+    function joyMove(t) {
+      var r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var dx = t.clientX - cx, dy = t.clientY - cy, d = Math.sqrt(dx * dx + dy * dy), max = r.width / 2 - 10;
+      if (d > max) { dx = dx * max / d; dy = dy * max / d; d = max; }
+      knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      touch.dir = d < 18 ? 0 : Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 37 : 39) : (dy < 0 ? 38 : 40);
+    }
+    function joyEnd() { touch.joyId = null; touch.dir = 0; knob.style.transform = ''; }
+    joy.addEventListener('touchstart', function (e) { e.preventDefault(); if (touch.joyId === null) { touch.joyId = e.changedTouches[0].identifier; joyMove(e.changedTouches[0]); } }, { passive: false });
+    joy.addEventListener('touchmove', function (e) { e.preventDefault(); for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].identifier === touch.joyId) joyMove(e.changedTouches[i]); }, { passive: false });
+    joy.addEventListener('touchend', function (e) { e.preventDefault(); joyEnd(); }, { passive: false });
+    joy.addEventListener('touchcancel', joyEnd);
+    // buttons
+    function tap(id, fn) { var b = $(id); b.addEventListener('touchstart', function (e) { e.preventDefault(); fn(true, b); }, { passive: false }); b.addEventListener('touchend', function (e) { e.preventDefault(); fn(false, b); }, { passive: false }); b.addEventListener('click', function () { if (!('ontouchstart' in window)) { fn(true, b); fn(false, b); } }); }
+    tap('tRight', function (down, b) { if (down) { touch.rightMode = !touch.rightMode; b.classList.toggle('on', touch.rightMode); } });
+    tap('tEnter', function (down) { padKey(down, 13); });
+    tap('tEsc', function (down) { padKey(down, 27); });
+    var inp = $('tInput');
+    tap('tKey', function (down) { if (down) { inp.value = ''; inp.focus(); } });
+    function typeChar(ch) {
+      var up = ch.toUpperCase(), code = up.charCodeAt(0);
+      var shift = ch !== ch.toLowerCase();
+      var mods = shift ? ['shift'] : [];
+      fireKey('keydown', ch, 'Key' + up, code, mods); fireKey('keyup', ch, 'Key' + up, code, mods);
+    }
+    inp.addEventListener('input', function () { var v = inp.value; inp.value = ''; for (var i = 0; i < v.length; i++) typeChar(v[i]); });
+    inp.addEventListener('keydown', function (e) {
+      var code = e.key === 'Backspace' ? 8 : e.key === 'Enter' ? 13 : e.key === 'Escape' ? 27 : 0;
+      if (code) { e.preventDefault(); fireKey('keydown', e.key, e.key, code, []); fireKey('keyup', e.key, e.key, code, []); if (code === 27) inp.blur(); }
+    });
+    inp.addEventListener('beforeinput', function (e) { if (e.inputType === 'deleteContentBackward') { e.preventDefault(); fireKey('keydown', 'Backspace', 'Backspace', 8, []); fireKey('keyup', 'Backspace', 'Backspace', 8, []); } });
+    requestAnimationFrame(touchLoop);
+  }
+
   function copyLog(btn) {
     var text = logLines.join('\n');
     function done() {
@@ -889,7 +961,7 @@
       $('game').classList.add('on');
       $('canvas').focus();
       FS.chdir(GAME_DIR);
-      started = true;
+      started = true; updateTouchUi();
       scheduleAutosave();
       updateMouseHint();
       // web_entry() runs the game's main(); with Asyncify the call resolves when the game exits
@@ -975,6 +1047,7 @@
 
     setupMouseCapture();
     setupGamepad();
+    setupTouch();
     $('fsBtn').addEventListener('click', function () {
       var st = $('stage'), c = $('canvas');
       if (document.fullscreenElement) { document.exitFullscreen(); c.focus(); return; }

@@ -35,6 +35,7 @@ Work in progress, playable. Last tested with the **GOG** version.
 - [x] **Export / import** of all of that as a single ZIP backup
 - [x] **Cheats panel**: buttons that replay the game's own cheat shortcuts (map, technologies, gold/food with a ×100 option, town, reputation, toggles). Tested: gold and food
 - [x] Mouse capture (ESC releases it), fullscreen, system cursor hidden while playing
+- [x] **Touch controls** *(new, untested on a real phone)*: tap/drag = click at that spot, round joystick = scroll map, "R" button toggles right-click mode (turns amber when on), Enter / Esc buttons, keyboard button for typing. Auto-enabled on touch devices; checkbox "Touch controls" in the bar
 - [x] **Gamepad (Xbox/PS4)** *(new, awaiting testing)*: right stick = cursor, left stick and D-pad = scroll map (Ctrl+arrows), A/Cross = left click, B/Circle = right click, X/Square and Back = Enter, Start = ESC
 - [x] Background music no longer changes track every in-game day
 - [x] Copy button for the technical log; English/Portuguese page
@@ -92,6 +93,7 @@ Em desenvolvimento, já jogável. Último teste com a versão da **GOG**.
 - [x] **Exportar / importar** tudo isso em um único backup ZIP
 - [x] **Painel de cheats**: botões que reenviam os atalhos de trapaça do próprio jogo (mapa, tecnologias, ouro/comida com opção ×100, cidade, reputação, modos liga/desliga). Testados: ouro e comida
 - [x] Captura do mouse (ESC libera), tela cheia, ponteiro do sistema oculto durante o jogo
+- [x] **Controles de toque** *(novo, ainda não testado em celular)*: toque/arrastar = clique naquele ponto, joystick redondo = rolar o mapa, botão "R" liga/desliga o modo clique direito (fica âmbar quando ativo), botões Enter / Esc, botão de teclado para digitar. Ativa sozinho em telas de toque; caixa "Controles de toque" na barra
 - [x] **Controle (Xbox/PS4)** *(novo, aguardando teste)*: analógico direito = cursor, analógico esquerdo e direcional = rolar o mapa (Ctrl+setas), A/Cruz = clique esquerdo, B/Bola = clique direito, X/Quadrado e Back = Enter, Start = ESC
 - [x] A música não troca mais de faixa a cada dia do jogo
 - [x] Botão de copiar o registro técnico; página em português e inglês

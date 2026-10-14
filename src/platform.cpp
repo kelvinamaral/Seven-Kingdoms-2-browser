@@ -663,6 +663,8 @@ static int  web_pad_dx = 0, web_pad_dy = 0;	// pending controller cursor motion 
 static int  web_pad_q[32], web_pad_qn = 0;		// pending controller buttons: 1/2 = left/right press, -1/-2 = release
 extern "C" {
 EMSCRIPTEN_KEEPALIVE void web_pad_move (int dx, int dy) { web_pad_dx += dx; web_pad_dy += dy; }
+static int web_pad_abs_set = 0, web_pad_ax = 0, web_pad_ay = 0;
+EMSCRIPTEN_KEEPALIVE void web_pad_abs (int x, int y) { web_pad_abs_set = 1; web_pad_ax = x; web_pad_ay = y; web_pad_dx = web_pad_dy = 0; }
 EMSCRIPTEN_KEEPALIVE void web_pad_button (int code) { if (web_pad_qn < 32) web_pad_q[web_pad_qn++] = code; }
 }
 static bool web_is_locked ()
@@ -723,11 +725,12 @@ static void web_apply_bound ()
 static int web_process_pad ()
 {
   int did = 0;
-  if (web_pad_dx || web_pad_dy) {
+  if (web_pad_dx || web_pad_dy || web_pad_abs_set) {
     if (!web_pad_ctl) {			// start from wherever the game cursor currently is
       web_pad_ctl = true;
       web_cx = mouse.cur_x; web_cy = mouse.cur_y;
     }
+    if (web_pad_abs_set) { web_cx = web_pad_ax; web_cy = web_pad_ay; web_pad_abs_set = 0; }
     web_cx += web_pad_dx; web_cy += web_pad_dy;
     web_pad_dx = web_pad_dy = 0;
     if (web_cx < 0) web_cx = 0;
