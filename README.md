@@ -35,6 +35,7 @@ Work in progress, playable. Last tested with the **GOG** version.
 - [x] **Export / import** of all of that as a single ZIP backup
 - [x] **Cheats panel**: buttons that replay the game's own cheat shortcuts (map, technologies, gold/food with a ×100 option, town, reputation, toggles). Tested: gold and food
 - [x] Mouse capture (ESC releases it), fullscreen, system cursor hidden while playing
+- [x] **Gamepad (Xbox/PS4)** *(new, awaiting testing)*: left stick = cursor, right stick/D-pad = scroll map, A/Cross = left click, B/Circle = right click, X/Square and Back = Enter, Start = ESC
 - [x] Background music no longer changes track every in-game day
 - [x] Copy button for the technical log; English/Portuguese page
 
@@ -89,6 +90,7 @@ Em desenvolvimento, já jogável. Último teste com a versão da **GOG**.
 - [x] **Exportar / importar** tudo isso em um único backup ZIP
 - [x] **Painel de cheats**: botões que reenviam os atalhos de trapaça do próprio jogo (mapa, tecnologias, ouro/comida com opção ×100, cidade, reputação, modos liga/desliga). Testados: ouro e comida
 - [x] Captura do mouse (ESC libera), tela cheia, ponteiro do sistema oculto durante o jogo
+- [x] **Controle (Xbox/PS4)** *(novo, aguardando teste)*: analógico esquerdo = cursor, analógico direito/direcional = rolar o mapa, A/Cruz = clique esquerdo, B/Bola = clique direito, X/Quadrado e Back = Enter, Start = ESC
 - [x] A música não troca mais de faixa a cada dia do jogo
 - [x] Botão de copiar o registro técnico; página em português e inglês
 

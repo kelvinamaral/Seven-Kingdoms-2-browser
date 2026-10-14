@@ -26,6 +26,7 @@
       imp_done: 'Importado: {n} arquivo(s). Recarregue a página para o perfil novo valer; os saves já aparecem no jogo.',
       imp_none: 'Nada para importar neste arquivo (use um .zip exportado aqui, ou arquivos .PRF/.DAT).',
       imp_err: 'Não foi possível importar: ',
+      pad_on: 'Controle conectado: ', pad_hint: 'Controle: analógico esq. = cursor, analógico dir./direcional = mapa, A = clique, B = clique direito, X = Enter, Start = ESC.',
       wipe_ask: 'Apagar o perfil, os saves e as configurações guardados neste navegador?', wiped: 'Dados salvos apagados.',
       err_runtime: 'O motor do jogo ainda está carregando. Aguarde um instante e tente de novo.',
       err_fatal: 'O jogo parou por um erro. Veja o registro técnico e recarregue a página.',
@@ -51,6 +52,7 @@
       imp_done: 'Imported {n} file(s). Reload the page for a new profile to take effect; saves show up in the game right away.',
       imp_none: 'Nothing to import in this file (use a .zip exported here, or .PRF/.DAT files).',
       imp_err: 'Could not import: ',
+      pad_on: 'Controller connected: ', pad_hint: 'Controller: left stick = cursor, right stick/d-pad = map, A = click, B = right click, X = Enter, Start = ESC.',
       wipe_ask: 'Erase your profile, saves and settings stored in this browser?', wiped: 'Saved data erased.',
       err_runtime: 'The game engine is still loading. Wait a moment and try again.',
       err_fatal: 'The game stopped because of an error. See the technical log and reload the page.',
@@ -75,6 +77,7 @@
       opt_capture: 'Capture the mouse (ESC releases it)',
       cheats: 'Cheats',
       export_btn: 'Export saves', import_btn: 'Import saves',
+      opt_pad: 'Controller (Xbox/PS4)',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -200,7 +203,7 @@
   }
   function setupMouseCapture() {
     try { if (localStorage.getItem('sk2-capture') === '0') $('optCapture').checked = false; } catch (e) {}
-    $('canvas').addEventListener('mousedown', function () { requestCapture(); });
+    $('canvas').addEventListener('mousedown', function (ev) { if (ev.isTrusted) requestCapture(); });
     document.addEventListener('pointerlockchange', function () {
       if (!isLocked() && selfExit) { selfExit = false; return; }		// released by the game for a dialog
       if (isLocked() && quietLock) { quietLock = false; return; }	// re-captured after a dialog
@@ -444,6 +447,88 @@
       if (!n) { $('gameStatus').textContent = tr('imp_none'); return; }
       return persistNow().then(function () { $('gameStatus').textContent = tr('imp_done').replace('{n}', n); });
     }).catch(function (e) { $('gameStatus').textContent = tr('imp_err') + (e && e.message ? e.message : e); });
+  }
+
+  // ---- game controller (Xbox / PS4 via the Gamepad API, standard mapping)
+  var pad = { x: 400, y: 300, fx: 0, fy: 0, prev: [], arrows: { 37: false, 38: false, 39: false, 40: false }, on: false, last: 0, id: '' };
+  var ARROWS = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' };
+  function padEnabled() { var o = $('optPad'); return !o || o.checked; }
+  function canvasScale() { var c = $('canvas'), r = c.getBoundingClientRect(); return { r: r, s: r.width > 0 ? c.width / r.width : 1 }; }
+  function padMouse(type, button, dx, dy) {		// synthetic mouse event at the virtual cursor position
+    var k = canvasScale(), c = $('canvas');
+    var cx = k.r.left + pad.x / k.s, cy = k.r.top + pad.y / k.s;
+    var ev = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, screenX: cx, screenY: cy,
+      button: button, buttons: type === 'mousedown' ? (button === 2 ? 2 : 1) : 0,
+      movementX: dx || 0, movementY: dy || 0, view: window });
+    c.dispatchEvent(ev);
+  }
+  function padKey(down, code) {
+    var key = code === 13 ? 'Enter' : code === 27 ? 'Escape' : ARROWS[code];
+    fireKey(down ? 'keydown' : 'keyup', key, key, code, []);
+  }
+  function padArrow(code, want) {
+    if (pad.arrows[code] === want) return;
+    pad.arrows[code] = want;
+    padKey(want, code);
+  }
+  function padFrame(now) {
+    requestAnimationFrame(padFrame);
+    if (!started || !padEnabled() || !navigator.getGamepads) return;
+    var gp = null, list = navigator.getGamepads();
+    for (var i = 0; i < list.length; i++) if (list[i] && list[i].connected) { gp = list[i]; break; }
+    if (!gp) {
+      if (pad.on) { pad.on = false; Object.keys(pad.arrows).forEach(function (c) { padArrow(+c, false); }); }
+      return;
+    }
+    if (!pad.on) {
+      pad.on = true;
+      pad.id = (gp.id || '').replace(/\(.*\)/, '').slice(0, 40);
+      $('gameStatus').textContent = tr('pad_on') + pad.id;
+      showHint(tr('pad_hint'), 6000);
+    }
+    var dt = Math.min(50, now - (pad.last || now)) / 1000; pad.last = now;
+    var ax = gp.axes, b = gp.buttons;
+    function dz(v) { var a = Math.abs(v); if (a < 0.18) return 0; a = (a - 0.18) / 0.82; return (v < 0 ? -1 : 1) * a * a; }
+    // left stick: cursor
+    var sx = dz(ax[0] || 0), sy = dz(ax[1] || 0);
+    if (sx || sy) {
+      var speed = 700 * dt, dx = sx * speed + pad.fx, dy = sy * speed + pad.fy;
+      var ix = Math.trunc(dx), iy = Math.trunc(dy);
+      pad.fx = dx - ix; pad.fy = dy - iy;
+      var nx = Math.max(0, Math.min(799, pad.x + ix)), ny = Math.max(0, Math.min(599, pad.y + iy));
+      var mx = nx - pad.x, my = ny - pad.y;
+      pad.x = nx; pad.y = ny;
+      if (mx || my) { var k = canvasScale(); padMouse('mousemove', 0, mx / k.s, my / k.s); }
+    }
+    // right stick or d-pad: scroll the map with the arrow keys
+    var rx = ax[2] || 0, ry = ax[3] || 0;
+    function pressed(i) { return b[i] && b[i].pressed; }
+    padArrow(37, rx < -0.45 || pressed(14));
+    padArrow(39, rx > 0.45 || pressed(15));
+    padArrow(38, ry < -0.45 || pressed(12));
+    padArrow(40, ry > 0.45 || pressed(13));
+    // buttons (edge detected): A=left click, B=right click, X=Enter, Start=ESC, Back=Enter
+    function edge(i, onDown, onUp) {
+      var now = pressed(i), was = !!pad.prev[i];
+      if (now && !was) onDown(); else if (!now && was && onUp) onUp();
+      pad.prev[i] = now;
+    }
+    edge(0, function () { pad.prev.__down = true; padMouse('mousedown', 0); }, function () { padMouse('mouseup', 0); pad.prev.__down = false; });
+    edge(1, function () { padMouse('mousedown', 2); }, function () { padMouse('mouseup', 2); });
+    edge(2, function () { padKey(true, 13); }, function () { padKey(false, 13); });
+    edge(9, function () { padKey(true, 27); }, function () { padKey(false, 27); });
+    edge(8, function () { padKey(true, 13); }, function () { padKey(false, 13); });
+  }
+  function setupGamepad() {
+    // keep the virtual cursor where the real mouse last was
+    $('canvas').addEventListener('mousemove', function (ev) {
+      if (!ev.isTrusted || isLocked()) return;
+      var k = canvasScale();
+      pad.x = Math.max(0, Math.min(799, (ev.clientX - k.r.left) * k.s));
+      pad.y = Math.max(0, Math.min(599, (ev.clientY - k.r.top) * k.s));
+    });
+    window.addEventListener('gamepadconnected', function () { if (started) $('gameStatus').textContent = tr('pad_on'); });
+    requestAnimationFrame(padFrame);
   }
 
   function copyLog(btn) {
@@ -888,6 +973,7 @@
     try { if (localStorage.getItem('sk2-persist') === '0') $('optPersist').checked = false; } catch (e) {}
 
     setupMouseCapture();
+    setupGamepad();
     $('fsBtn').addEventListener('click', function () {
       var st = $('stage'), c = $('canvas');
       if (document.fullscreenElement) { document.exitFullscreen(); c.focus(); return; }
