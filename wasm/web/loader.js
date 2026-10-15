@@ -79,6 +79,7 @@
       export_btn: 'Export saves', import_btn: 'Import saves',
       opt_pad: 'Controller (Xbox/PS4)',
       opt_touch: 'Touch controls',
+      opt_speed: 'Joystick speed',
       start: 'Play', notes_h: 'Notes',
       n_saves: 'Saved games and settings are kept in this browser\'s storage (IndexedDB), on this computer.',
       n_mp: 'Multiplayer and intro videos are not available in the web version.',
@@ -289,6 +290,8 @@
     var p = $('cheatPanel');
     p.textContent = '';
     function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt) e.textContent = txt; return e; }
+    var cb = el('div', 'closebar'), cx = el('button', 'secondary', '\u2715 ' + L('Fechar', 'Close'));
+    cx.type = 'button'; cx.addEventListener('click', toggleCheats); cb.appendChild(cx); p.appendChild(cb);
     p.appendChild(el('p', 'note', L(
       'Estes botões enviam os atalhos de trapaça do próprio jogo. Funcionam no Editor de Cenários; em partidas normais, ative antes o modo cheat. O mouse fica solto enquanto este painel está aberto.',
       'These buttons send the game\u2019s own cheat shortcuts. They work in the Scenario Editor; in normal games enable cheat mode first. The mouse stays released while this panel is open.')));
@@ -327,7 +330,7 @@
 
   function toggleCheats() {
     cheatOpen = !cheatOpen;
-    if (cheatOpen) { buildCheatPanel(); if (isLocked()) document.exitPointerLock(); }
+    if (cheatOpen) { buildCheatPanel(); if (isLocked()) document.exitPointerLock(); $('toolbar').classList.remove('open'); var mb = $('tMore'); if (mb) mb.classList.remove('on'); }
     $('cheatPanel').hidden = !cheatOpen;
     updateMouseHint();
   }
@@ -504,7 +507,7 @@
     var dpad = pressed(14) || lx < -0.4 ? 37 : pressed(15) || lx > 0.4 ? 39 : pressed(12) || ly < -0.4 ? 38 : pressed(13) || ly > 0.4 ? 40 : 0;
     if (dpad) {
       if (!pad.ctrl) { pad.ctrl = true; fireKey('keydown', 'Control', 'ControlLeft', KC.ctrl[0], ['ctrl']); }
-      if (now - (pad.rep || 0) > 35) {
+      if (now - (pad.rep || 0) > scrollInterval()) {
         pad.rep = now; var nm = ARROWS[dpad];
         fireKey('keydown', nm, nm, dpad, ['ctrl']); fireKey('keyup', nm, nm, dpad, ['ctrl']);
       }
@@ -535,6 +538,12 @@
 
   // ---- touch controls: tap/drag = click at that spot, joystick = scroll map, buttons = right-click toggle / Enter / Esc / keyboard
   var touch = { rightMode: false, dir: 0, rep: 0, ctrl: false, id: null, joyId: null };
+  function scrollInterval() { var o = $('optSpeed'), v = o ? +o.value : 4; return 160 - v * 14; }
+  function setupSpeed() {
+    var o = $('optSpeed'); if (!o) return;
+    try { var s = localStorage.getItem('sk2_joyspeed'); if (s) o.value = s; } catch (e) {}
+    o.addEventListener('input', function () { try { localStorage.setItem('sk2_joyspeed', o.value); } catch (e) {} });
+  }
   function touchEnabled() { var o = $('optTouch'); return !!o && o.checked; }
   function updateTouchUi() { var on = started && touchEnabled(); $('touchUi').hidden = !on; document.body.classList.toggle('touchmode', on); if (!on) $('toolbar').classList.remove('open'); }
   function toGame(t) {
@@ -546,7 +555,7 @@
     var want = touchEnabled() && started ? touch.dir : 0;
     if (want) {
       if (!touch.ctrl) { touch.ctrl = true; fireKey('keydown', 'Control', 'ControlLeft', KC.ctrl[0], ['ctrl']); }
-      if (now - touch.rep > 35) { touch.rep = now; var nm = ARROWS[want]; fireKey('keydown', nm, nm, want, ['ctrl']); fireKey('keyup', nm, nm, want, ['ctrl']); }
+      if (now - touch.rep > scrollInterval()) { touch.rep = now; var nm = ARROWS[want]; fireKey('keydown', nm, nm, want, ['ctrl']); fireKey('keyup', nm, nm, want, ['ctrl']); }
     } else if (touch.ctrl) { touch.ctrl = false; fireKey('keyup', 'Control', 'ControlLeft', KC.ctrl[0], []); }
   }
   function setupTouch() {
@@ -1048,6 +1057,7 @@
 
     setupMouseCapture();
     setupGamepad();
+    setupSpeed();
     setupTouch();
     $('fsBtn').addEventListener('click', function () {
       var st = document.body.classList.contains('touchmode') ? $('game') : $('stage'), c = $('canvas');

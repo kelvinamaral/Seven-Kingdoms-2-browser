@@ -60,6 +60,7 @@
   #tbtns { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
   #tbtns button { pointer-events: auto; touch-action: none; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: rgba(255,255,255,.1); color: #fff; font: 600 13px sans-serif; opacity: .85; }
   #tbtns button.on, #tbtns button:active { background: rgba(230,160,40,.8); opacity: 1; }
+  #cheatPanel .closebar { position: sticky; top: 0; z-index: 2; background: inherit; padding: 4px 0 8px; }
   #tInput { position: absolute; left: -9999px; bottom: 0; width: 10px; opacity: 0; }
   #rotateMsg { display: none; }
   /* touch mode: full-screen 16:9 area, game 4:3 in the middle, controls in the side bars */
@@ -169,6 +170,7 @@
     <button type="button" class="secondary" id="cheatBtn" data-t="cheats">Cheats</button>
     <button type="button" class="secondary" id="logBtn" data-t="show_log">Registro</button>
     <label class="small"><input type="checkbox" id="optCapture" checked> <span data-t="opt_capture">Capturar o mouse (ESC libera)</span></label>
+    <label class="small"><span data-t="opt_speed">Velocidade do joystick</span> <input type="range" id="optSpeed" min="1" max="10" value="4"></label>
     <label class="small"><input type="checkbox" id="optTouch"> <span data-t="opt_touch">Controles de toque</span></label>
     <label class="small"><input type="checkbox" id="optPad" checked> <span data-t="opt_pad">Controle (Xbox/PS4)</span></label>
     <span class="small" id="gameStatus"></span>
@@ -180,7 +182,7 @@
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
-    locateFile: function (p) { return p + '?v=20261015055618'; },
+    locateFile: function (p) { return p + '?v=20261015063657'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -189,8 +191,8 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js?v=20261015055618"></script>
-<script async type="text/javascript" src="index.js?v=20261015055618"></script>
+<script src="loader.js?v=20261015063657"></script>
+<script async type="text/javascript" src="index.js?v=20261015063657"></script>
 </body>
 </html>
 
