@@ -1098,6 +1098,31 @@ void Magic::draw_circle(VgaBuf *vgabuf, int x1, int y1, int radius, char r_x, ch
   B1 = B1 >> 3;
   if ((mode == 1) || (mode == 3)) G1 = G1 >> 2;
   else G1 = G1 >> 3;
+#ifndef ASM_FOR_MSVC
+	// portable replacement for the MSVC inline assembly below: additive radial glow
+	{
+		int gx0 = x1-radius, gx9 = x1+radius, gy0 = y1-radius, gy9 = y1+radius;
+		if( gx0 < bound_x1 ) gx0 = bound_x1;
+		if( gx9 > bound_x2 ) gx9 = bound_x2;
+		if( gy0 < bound_y1 ) gy0 = bound_y1;
+		if( gy9 > bound_y2 ) gy9 = bound_y2;
+		int gr2 = radius*radius;
+		if( gr2 <= 0 || gx0 > gx9 || gy0 > gy9 ) return;
+		for( int gy=gy0 ; gy<=gy9 ; gy++ )
+		{
+			short *gp = vgabuf->buf_ptr(gx0, gy);
+			for( int gx=gx0 ; gx<=gx9 ; gx++, gp++ )
+			{
+				int gd = (gx-x1)*(gx-x1) + (gy-y1)*(gy-y1);
+				if( gd >= gr2 ) continue;
+				int gf = 256 - gd*256/gr2;
+				gf = (gf*gf) >> 8;
+				*gp = add_blend(gp, (R1*gf)>>8, (G1*gf)>>8, (B1*gf)>>8);
+			}
+		}
+		return;
+	}
+#endif
 #ifdef ASM_FOR_MSVC
 	_asm
 	{
@@ -1441,6 +1466,31 @@ void Magic::draw_circle2(VgaBuf *vgabuf, int x1, int y1, int radius, char r_x, c
   if ((mode == 1) || (mode == 3)) G1 = G1 >> 2;
   else G1 = G1 >> 3;
 
+#ifndef ASM_FOR_MSVC
+	// portable replacement for the MSVC inline assembly below: additive radial glow
+	{
+		int gx0 = x1-radius, gx9 = x1+radius, gy0 = y1-radius, gy9 = y1+radius;
+		if( gx0 < bound_x1 ) gx0 = bound_x1;
+		if( gx9 > bound_x2 ) gx9 = bound_x2;
+		if( gy0 < bound_y1 ) gy0 = bound_y1;
+		if( gy9 > bound_y2 ) gy9 = bound_y2;
+		int gr2 = radius*radius;
+		if( gr2 <= 0 || gx0 > gx9 || gy0 > gy9 ) return;
+		for( int gy=gy0 ; gy<=gy9 ; gy++ )
+		{
+			short *gp = vgabuf->buf_ptr(gx0, gy);
+			for( int gx=gx0 ; gx<=gx9 ; gx++, gp++ )
+			{
+				int gd = (gx-x1)*(gx-x1) + (gy-y1)*(gy-y1);
+				if( gd >= gr2 ) continue;
+				int gf = 256 - gd*256/gr2;
+				gf = (gf*gf) >> 8;
+				*gp = add_blend(gp, (R1*gf)>>8, (G1*gf)>>8, (B1*gf)>>8);
+			}
+		}
+		return;
+	}
+#endif
 #ifdef ASM_FOR_MSVC
 	_asm
 	{
