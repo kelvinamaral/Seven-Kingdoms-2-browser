@@ -73,6 +73,11 @@ void Dump(const char *x) { printf("%s", x); }
 
 //-------- Define constant ----------//
 
+#ifdef __EMSCRIPTEN_WEB__
+#define TRACE(...) printf(__VA_ARGS__)
+#else
+#define TRACE(...) ((void)0)
+#endif
 #define BOOK_MARK 0x1000         // book mark for validing saving data
 
 
@@ -476,8 +481,10 @@ int GameFile::write_file_3(File* filePtr)
 
 	write_book_mark( BOOK_MARK+217 );
 
+	TRACE("base_obj_array begin size=%d\n", (int)base_obj_array.size());
 	if( !base_obj_array.write_file(filePtr) )
 		return 0;
+	TRACE("base_obj_array done\n");
 
 	return 1;
 }

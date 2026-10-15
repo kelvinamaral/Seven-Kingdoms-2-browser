@@ -96,7 +96,11 @@ void Sys::save_game()
    game_file_array.reload();                  // reload any save game file
    game_file_array.menu(-2);               // save screen area to back buffer
 
-   if( game_file_array.menu(1) == 1 )
+   int saveRc = game_file_array.menu(1);
+#ifdef __EMSCRIPTEN_WEB__
+   printf("Sys::save_game: menu returned %d\n", saveRc);
+#endif
+   if( saveRc == 1 )
    {
       if( GameFile::last_read_success_flag )
          box.msg( text_game_menu.str_save_success() ); // "Game Saved Successfully" );

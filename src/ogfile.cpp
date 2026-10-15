@@ -156,15 +156,24 @@ int GameFile::save_game(const char *path, const char* fileName, const char *game
 		if( rc )
 		{
 			rc = write_file(&file);
+#ifdef __EMSCRIPTEN_WEB__
+			printf("save_game: write_file rc=%d\n", rc);
+#endif
 
 			if( !rc )
 				errStr = text_game_menu.str_save_error_general(); // "Error writing saved game data.";
 		}
 	}
 
+#ifdef __EMSCRIPTEN_WEB__
+	printf("save_game: closing\n");
+#endif
 	file.file_close();
 
 	power.win_opened=0;
+#ifdef __EMSCRIPTEN_WEB__
+	printf("save_game: closed rc=%d\n", rc);
+#endif
 
 	//------- when saving error ---------//
 
