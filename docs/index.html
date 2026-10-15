@@ -55,12 +55,21 @@
   body.playing canvas#canvas { cursor: none; }
   #touchUi { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
   #touchUi[hidden] { display: none; }
-  #joy { position: absolute; left: 14px; bottom: 14px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.35); pointer-events: auto; touch-action: none; }
-  #knob { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(0,0,0,.45); border: 2px solid rgba(255,255,255,.5); }
-  #tbtns { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
-  #tbtns button { pointer-events: auto; touch-action: none; min-width: 64px; height: 44px; border-radius: 22px; border: 2px solid rgba(255,255,255,.4); background: rgba(0,0,0,.35); color: #fff; font: 600 14px sans-serif; opacity: .7; }
-  #tbtns button.on, #tbtns button:active { background: rgba(230,160,40,.75); opacity: 1; }
+  #joy { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: 18px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.4); pointer-events: auto; touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.6); }
+  #tbtns { position: absolute; right: max(14px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  #tbtns button { pointer-events: auto; touch-action: none; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: rgba(255,255,255,.1); color: #fff; font: 600 13px sans-serif; opacity: .85; }
+  #tbtns button.on, #tbtns button:active { background: rgba(230,160,40,.8); opacity: 1; }
   #tInput { position: absolute; left: -9999px; bottom: 0; width: 10px; opacity: 0; }
+  #rotateMsg { display: none; }
+  /* touch mode: full-screen 16:9 area, game 4:3 in the middle, controls in the side bars */
+  body.touchmode { overflow: hidden; }
+  body.touchmode #game { position: fixed; inset: 0; width: auto; padding: 0; background: #000; z-index: 10; justify-content: center; }
+  body.touchmode #stage { width: min(100vw, calc(100dvh * 4 / 3)); }
+  body.touchmode #toolbar { display: none; position: fixed; top: 0; bottom: 0; right: 96px; width: 230px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; overflow: auto; background: rgba(15,15,20,.96); z-index: 30; }
+  body.touchmode #toolbar.open { display: flex; }
+  body.touchmode #cheatPanel { position: fixed; top: 0; bottom: 0; left: 0; width: min(440px, 55vw); margin: 0; overflow: auto; z-index: 30; }
+  @media (orientation: portrait) { body.touchmode #rotateMsg { display: flex; position: fixed; inset: 0; z-index: 50; background: #000; color: #fff; align-items: center; justify-content: center; font: 600 18px sans-serif; text-align: center; padding: 20px; } }
   #mouseHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: 90%; text-align: center;
     background: rgba(0,0,0,.78); color: #f3e9d2; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px;
     font-size: .85rem; pointer-events: none; transition: opacity .4s; }
@@ -138,17 +147,19 @@
   <div id="stage">
     <canvas id="canvas" width="800" height="600" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
     <div id="mouseHint" hidden></div>
-    <div id="touchUi" hidden>
-      <div id="joy"><div id="knob"></div></div>
-      <div id="tbtns">
-        <button type="button" id="tRight">&#9654;R</button>
-        <button type="button" id="tEnter">Enter</button>
-        <button type="button" id="tEsc">Esc</button>
-        <button type="button" id="tKey">&#9000;</button>
-      </div>
-      <input id="tInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
-    </div>
   </div>
+  <div id="touchUi" hidden>
+    <div id="joy"><div id="knob"></div></div>
+    <div id="tbtns">
+      <button type="button" id="tEsc" title="Esc">&#9776;</button>
+      <button type="button" id="tEnter">Enter</button>
+      <button type="button" id="tKey">&#9000;</button>
+      <button type="button" id="tRight">R</button>
+      <button type="button" id="tMore">&#9638;</button>
+    </div>
+    <input id="tInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+  </div>
+  <div id="rotateMsg">&#8635; Gire o aparelho / Rotate your device</div>
   <div id="toolbar">
     <button type="button" class="secondary" id="fsBtn" data-t="fullscreen">Tela cheia</button>
     <button type="button" class="secondary" id="saveBtn" data-t="save_now">Gravar saves no navegador</button>
@@ -169,7 +180,7 @@
 <script>
   var Module = {
     canvas: document.getElementById('canvas'),
-    locateFile: function (p) { return p + '?v=20261014191035'; },
+    locateFile: function (p) { return p + '?v=20261015053546'; },
     noInitialRun: true,
     print: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
     printErr: function (t) { window.SevenKWeb && SevenKWeb.log(t); },
@@ -178,8 +189,8 @@
     onExit: function () { SevenKWeb.ended(); }
   };
 </script>
-<script src="loader.js?v=20261014191035"></script>
-<script async type="text/javascript" src="index.js?v=20261014191035"></script>
+<script src="loader.js?v=20261015053546"></script>
+<script async type="text/javascript" src="index.js?v=20261015053546"></script>
 </body>
 </html>
 

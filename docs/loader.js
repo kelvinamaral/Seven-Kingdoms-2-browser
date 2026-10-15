@@ -536,7 +536,7 @@
   // ---- touch controls: tap/drag = click at that spot, joystick = scroll map, buttons = right-click toggle / Enter / Esc / keyboard
   var touch = { rightMode: false, dir: 0, rep: 0, ctrl: false, id: null, joyId: null };
   function touchEnabled() { var o = $('optTouch'); return !!o && o.checked; }
-  function updateTouchUi() { $('touchUi').hidden = !(started && touchEnabled()); }
+  function updateTouchUi() { var on = started && touchEnabled(); $('touchUi').hidden = !on; document.body.classList.toggle('touchmode', on); if (!on) $('toolbar').classList.remove('open'); }
   function toGame(t) {
     var k = canvasScale();
     return [Math.max(0, Math.min(799, Math.round((t.clientX - k.r.left) * k.s))), Math.max(0, Math.min(599, Math.round((t.clientY - k.r.top) * k.s)))];
@@ -587,6 +587,7 @@
     tap('tRight', function (down, b) { if (down) { touch.rightMode = !touch.rightMode; b.classList.toggle('on', touch.rightMode); } });
     tap('tEnter', function (down) { padKey(down, 13); });
     tap('tEsc', function (down) { padKey(down, 27); });
+    tap('tMore', function (down, b) { if (down) { var tb = $('toolbar'); tb.classList.toggle('open'); b.classList.toggle('on', tb.classList.contains('open')); } });
     var inp = $('tInput');
     tap('tKey', function (down) { if (down) { inp.value = ''; inp.focus(); } });
     function typeChar(ch) {
@@ -1049,7 +1050,7 @@
     setupGamepad();
     setupTouch();
     $('fsBtn').addEventListener('click', function () {
-      var st = $('stage'), c = $('canvas');
+      var st = document.body.classList.contains('touchmode') ? $('game') : $('stage'), c = $('canvas');
       if (document.fullscreenElement) { document.exitFullscreen(); c.focus(); return; }
       var p = st.requestFullscreen ? st.requestFullscreen() : null;
       Promise.resolve(p).then(function () { requestCapture(); c.focus(); }, function () { c.focus(); });
